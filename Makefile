@@ -1,9 +1,7 @@
 CXX = c++
 CXXFLAGS = -O3 -DNDEBUG -Wall
 
-all: check
-
-compile_test:
+all:
 	$(CXX) $(CXXFLAGS) pseudosquares_prime_sieve.cpp -o pseudosquares_prime_sieve
 
 .PHONY: clean
