@@ -227,7 +227,7 @@ bool pseudosquares_prime_test(uint64_t n, int p)
 uint64_t get_segment_size(uint64_t start, uint64_t stop)
 {
     uint64_t segment_size = 1 << 14;
-    uint64_t root4_stop = (uint64_t) std::sqrt(std::sqrt(stop));
+    uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.0);
     segment_size = std::max(segment_size, root4_stop);
     segment_size = std::min(segment_size, (stop - start) + 1);
     return segment_size;
@@ -282,7 +282,7 @@ int main(int argc, char** argv)
     {
         uint64_t sqrt_low = (uint64_t) std::sqrt(low);
         uint64_t high = std::min(low + sieve.size() - 1, stop);
-        uint64_t limit = std::min((uint64_t) sieve.size(), sqrt_low);
+        uint64_t limit = std::min(s, sqrt_low);
         std::fill(sieve.begin(), sieve.end(), true);
 
         // Sieve out multiple of primes <= s
