@@ -147,24 +147,22 @@ std::vector<uint64_t> get_sieving_primes(uint64_t n)
     return sieving_primes;
 }
 
-// Modular exponentiation
-uint64_t mod_pow(uint64_t base, uint64_t exponent, uint64_t modulus)
+uint64_t mulmod(uint64_t a, uint64_t b, uint64_t m)
 {
-    if (modulus == 1)
-        return 0;
+    __uint128_t r = __uint128_t(a) * b;
+    return (uint64_t)(r % m);
+}
 
+// Modular exponentiation
+uint64_t modpow(uint64_t a, uint64_t e, uint64_t m)
+{
     uint64_t res = 1;
-    base %= modulus;
-
-    while (exponent > 0)
-    {
-        if (exponent & 1)
-            res = uint64_t((res * __uint128_t(base)) % modulus);
-
-        base = uint64_t((base * __uint128_t(base)) % modulus);
-        exponent >>= 1;
+    a %= m;
+    while (e) {
+        if (e & 1) res = mulmod(res, a, m);
+        a = mulmod(a, a, m);
+        e >>= 1;
     }
-
     return res;
 }
 
@@ -175,13 +173,13 @@ bool pseudosquares_prime_test(uint64_t n, int p)
     uint64_t count_res_minus_1 = 0;
 
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
-    if (n % 8 == 5 && mod_pow(2, exponent, n) != n - 1)
+    if (n % 8 == 5 && modpow(2, exponent, n) != n - 1)
         return false;
 
     // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
     for (uint64_t i = 0; primes[i] <= p; i++)
     {
-        uint64_t res = mod_pow(primes[i], exponent, n);
+        uint64_t res = modpow(primes[i], exponent, n);
 
         if (res != 1 && res != n - 1)
             return false; // Violates ±1 requirement
@@ -205,7 +203,7 @@ bool pseudosquares_prime_test(uint64_t n, int p)
             // this fix in an email.
             for (uint64_t i = prime_pi[p] + 1; i < pseudosquares.size() && pseudosquares[i].Lp <= n; i++)
             {
-                uint64_t res = mod_pow(pseudosquares[i].p, exponent, n);
+                uint64_t res = modpow(pseudosquares[i].p, exponent, n);
 
                 if (res == n - 1)
                     return true; // res ≡ -1 ⇒ prime
