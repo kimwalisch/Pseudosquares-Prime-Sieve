@@ -231,50 +231,18 @@ bool pseudosquares_prime_test(uint64_t n, int p)
     return true;
 }
 
-int main(int argc, char** argv)
+// Sieve the primes inside [start, stop]
+void pseudosquares_prime_sieve(uint64_t start,
+                               uint64_t stop,
+                               uint64_t segment_size,
+                               uint64_t s,
+                               uint64_t p,
+                               uint64_t Lp)
 {
-    uint64_t start = uint64_t(1e10);
-    uint64_t stop = start + uint64_t(1e6);
-
-    if (argc > 1)
-        start = std::atoll(argv[1]);
-    if (argc > 2)
-        stop = std::atoll(argv[2]);
-    if (stop < start)
-      stop = start + uint64_t(1e6);
-
-    std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
-
-    // In Sorenson's paper the segment size is named ∆,
-    // with ∆ = s / log(n). s is the upper bound for
-    // sieving, we sieve using the sieving primes <= s.
-    uint64_t segment_size = get_segment_size(stop);
-    std::vector<bool> sieve(segment_size);
-    double log_stop = std::log(stop);
-    log_stop = std::max(1.0, log_stop);
-
-    // Variables used in Sorenson's paper
-    uint64_t s = segment_size * log_stop;
-    uint64_t p = 0;
-    uint64_t Lp = 0;
-
-    // Pick the prime p so that Lp such that n/s < Lp
-    for (const auto& pss : pseudosquares)
-    {
-        p = pss.p;
-        Lp = pss.Lp;
-        if (Lp > stop / s)
-            break;
-    }
-
-    std::cout << "Sieve size: " << sieve.size() << " bytes" << std::endl;
-    std::cout << "s: " << s << std::endl;
-    std::cout << "p: " << p << std::endl;
-    std::cout << "Lp: " << Lp << std::endl;
-
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
-    const std::vector<uint64_t> sieving_primes = get_sieving_primes(max_sieving_prime);
+    const auto sieving_primes = get_sieving_primes(max_sieving_prime);
+    std::vector<bool> sieve(segment_size);
     uint64_t count = 0;
 
     for (uint64_t low = start; low <= stop; low += sieve.size())
@@ -304,6 +272,49 @@ int main(int argc, char** argv)
     }
 
     std::cout << "\nPrimes: " << count << std::endl;
+}
+
+int main(int argc, char** argv)
+{
+    uint64_t start = uint64_t(1e10);
+    uint64_t stop = start + uint64_t(1e6);
+
+    if (argc > 1)
+        start = std::atoll(argv[1]);
+    if (argc > 2)
+        stop = std::atoll(argv[2]);
+    if (stop < start)
+      stop = start + uint64_t(1e6);
+
+    std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
+
+    // In Sorenson's paper the segment size is named ∆,
+    // with ∆ = s / log(n). s is the upper bound for
+    // sieving, we sieve using the sieving primes <= s.
+    uint64_t segment_size = get_segment_size(stop);
+    double log_stop = std::log(stop);
+    log_stop = std::max(1.0, log_stop);
+
+    // Variables used in Sorenson's paper
+    uint64_t s = segment_size * log_stop;
+    uint64_t p = 0;
+    uint64_t Lp = 0;
+
+    // Pick the prime p so that Lp such that n/s < Lp
+    for (const auto& pss : pseudosquares)
+    {
+        p = pss.p;
+        Lp = pss.Lp;
+        if (Lp > stop / s)
+            break;
+    }
+
+    std::cout << "Sieve size: " << segment_size << " bytes" << std::endl;
+    std::cout << "s: " << s << std::endl;
+    std::cout << "p: " << p << std::endl;
+    std::cout << "Lp: " << Lp << std::endl;
+
+    pseudosquares_prime_sieve(start, stop, segment_size, s, p, Lp);
 
     return 0;
 }
