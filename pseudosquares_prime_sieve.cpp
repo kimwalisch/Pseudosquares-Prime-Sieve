@@ -127,6 +127,20 @@ const std::array<Pseudosquare, 58> pseudosquares =
     { 271, 10198100582046287689ull }
 }};
 
+// In Sorenson's paper the semgent size is named ∆,
+// with ∆ = s / log(n). We also have ∆ = Θ(π(p) log n).
+// Sorenson's paper also mentions that using a larger
+// segment size improves performance. Hence, we use a
+// segment size of O(n^(1/4.5)).
+//
+uint64_t get_segment_size(uint64_t stop)
+{
+    uint64_t segment_size = 1 << 14;
+    uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
+    segment_size = std::max(segment_size, root4_stop);
+    return segment_size;
+}
+
 // Generate sieving primes <= n
 std::vector<uint64_t> get_sieving_primes(uint64_t n)
 {
@@ -217,20 +231,6 @@ bool pseudosquares_prime_test(uint64_t n, int p)
     return true;
 }
 
-// Sorenson's paper uses a semgent size of: s / log(n).
-// However, the paper also mentions that using a
-// larger segment size improves performance. Hence,
-// we use a segment size of O(n^(1/4)).
-//
-uint64_t get_segment_size(uint64_t start, uint64_t stop)
-{
-    uint64_t segment_size = 1 << 14;
-    uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.0);
-    segment_size = std::max(segment_size, root4_stop);
-    segment_size = std::min(segment_size, (stop - start) + 1);
-    return segment_size;
-}
-
 int main(int argc, char** argv)
 {
     uint64_t start = uint64_t(1e10);
@@ -245,16 +245,16 @@ int main(int argc, char** argv)
 
     std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
 
-    // We use s as sieve array size.
-    // This is slightly different from Sorenson's paper where
-    // s = delta * log(n) and where delta is used as sieve
-    // size. However, the paper also mentions that using a
-    // larger segment size improves performance. Hence, we use
-    // a segment size of O(n^(1/4)) to improve performance.
-    uint64_t s = get_segment_size(start, stop);
-    std::vector<bool> sieve(s);
+    // In Sorenson's paper the segment size is named ∆,
+    // with ∆ = s / log(n). s is the upper bound for
+    // sieving, we sieve using the sieving primes <= s.
+    uint64_t segment_size = get_segment_size(stop);
+    std::vector<bool> sieve(segment_size);
+    double log_stop = std::log(stop);
+    log_stop = std::max(1.0, log_stop);
 
     // Variables used in Sorenson's paper
+    uint64_t s = segment_size * log_stop;
     uint64_t p = 0;
     uint64_t Lp = 0;
 
@@ -267,7 +267,8 @@ int main(int argc, char** argv)
             break;
     }
 
-    std::cout << "s: " << s << " (sieve size in bytes)" << std::endl; 
+    std::cout << "Sieve size: " << sieve.size() << " bytes" << std::endl;
+    std::cout << "s: " << s << std::endl;
     std::cout << "p: " << p << std::endl;
     std::cout << "Lp: " << Lp << std::endl;
 
