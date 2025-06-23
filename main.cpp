@@ -32,10 +32,12 @@ int main(int argc, char** argv)
 
         auto t1 = std::chrono::system_clock::now();
 
-        pseudosquares_prime_sieve(start, stop, true);
+        uint64_t count = pseudosquares_prime_sieve(start, stop, true);
 
         auto t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> seconds = t2 - t1;
+
+        std::cout << "\nPrimes: " << count << std::endl;
         std::cout << "Seconds: " << std::fixed << std::setprecision(3) << seconds.count() << std::endl;
     }
     catch (const std::exception& e)
