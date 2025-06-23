@@ -304,8 +304,10 @@ void pseudosquares_prime_sieve(uint64_t start,
         }
 
         // Count the number of primes found
-        for (uint64_t i = 0; i < sieve.size() && low + i <= stop; i++)
+        for (uint64_t i = 0; i < sieve.size(); i++)
         {
+            if (low + i > stop)
+                break;
             if (sieve[i])
             {
                 if (max_sieving_prime >= sqrt_high)
