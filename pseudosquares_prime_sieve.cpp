@@ -14,9 +14,11 @@
 ///
 
 #include <iostream>
+#include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
-#include <array>
+#include <iomanip>
 #include <vector>
 #include <stdint.h>
 
@@ -355,11 +357,17 @@ int main(int argc, char** argv)
     }
 
     std::cout << "Sieve size: " << segment_size << " bytes" << std::endl;
-    std::cout << "s: " << s << std::endl;
-    std::cout << "p: " << p << std::endl;
-    std::cout << "Lp: " << Lp << std::endl;
+    std::cout << "s: " << s << " (max sieving prime)" << std::endl;
+    std::cout << "p: " << p << " (pseudosquares_prime_test prime)" << std::endl;
+    std::cout << "Lp: " << Lp << " (pseudosquare)" << std::endl;
+
+    auto t1 = std::chrono::system_clock::now();
 
     pseudosquares_prime_sieve(start, stop, segment_size, s, p, Lp);
+
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> seconds = t2 - t1;
+    std::cout << "Seconds: " << std::fixed << std::setprecision(3) << seconds.count() << std::endl;
 
     return 0;
 }
