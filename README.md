@@ -7,10 +7,12 @@ This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](htt
 You need to have installed a C++ compiler and the GNU make tool.
 
 ```bash
-# Build and run tests
-$ make
-$ make check
+# Build
+$ make -j
 
 # Count the primes inside [low, high]
 $ ./pseudosquares_prime_sieve 1e15 1e15+1e7
+
+# Run tests
+$ ./test
 ```
