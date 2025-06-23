@@ -260,6 +260,11 @@ void pseudosquares_prime_sieve(uint64_t start,
                                uint64_t p,
                                uint64_t Lp)
 {
+    if (start < 2)
+        start = 2;
+    if (stop < start)
+        return;
+
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
     std::vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
