@@ -269,10 +269,10 @@ void pseudosquares_prime_sieve(uint64_t start,
     for (uint64_t low = start; low <= stop; low += sieve.size())
     {
         std::fill(sieve.begin(), sieve.end(), true);
-        uint64_t high = std::min(low + sieve.size(), stop);
-        uint64_t sqrt_low = (uint64_t) std::sqrt(low);
-        uint64_t max_i = high - low;
-        max_sieving_prime = std::min(s, sqrt_low);
+        uint64_t high = std::min(low + sieve.size() - 1, stop);
+        uint64_t sqrt_high = (uint64_t) std::sqrt(high);
+        uint64_t max_i = (high - low) + 1;
+        max_sieving_prime = std::min(s, sqrt_high);
 
         // Sieve out multiples of primes <= s
         for (auto& sp : sieving_primes)
@@ -291,16 +291,24 @@ void pseudosquares_prime_sieve(uint64_t start,
                 i = n - low;
             }
 
-            // Cross-off multiples inside [low, high[
+            // Cross-off multiples inside [low, high]
             for (; i < max_i; i += prime)
                 sieve[i] = false;
 
             sp.i = i - max_i;
         }
 
+        // Count the number of primes found
         for (uint64_t i = 0; i < sieve.size() && low + i <= stop; i++)
-            if (sieve[i] && pseudosquares_prime_test(low + i, p))
-                count++;
+        {
+            if (sieve[i])
+            {
+                if (max_sieving_prime >= sqrt_high)
+                    count++;
+                else if (pseudosquares_prime_test(low + i, p))
+                    count++;
+            }
+        }
     }
 
     std::cout << "\nPrimes: " << count << std::endl;
