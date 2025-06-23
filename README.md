@@ -11,5 +11,5 @@ You need to have installed a C++ compiler and the GNU make tool.
 $ make
 
 # Count the primes inside [low, high]
-$ ./pseudosquares_prime_sieve $((10**15)) $((10**15 + 10**7))
+$ ./pseudosquares_prime_sieve 1e15 1e15+1e7
 ```

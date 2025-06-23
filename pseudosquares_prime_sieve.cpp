@@ -13,12 +13,12 @@
 /// file in the top level directory.
 ///
 
+#include "pseudosquares_prime_sieve.hpp"
+
 #include <iostream>
 #include <array>
-#include <chrono>
 #include <cmath>
 #include <cstdlib>
-#include <iomanip>
 #include <vector>
 #include <stdint.h>
 
@@ -255,17 +255,17 @@ bool pseudosquares_prime_test(uint64_t n, int p)
 }
 
 // Sieve primes inside [start, stop]
-void pseudosquares_prime_sieve(uint64_t start,
-                               uint64_t stop,
-                               uint64_t segment_size,
-                               uint64_t s,
-                               uint64_t p,
-                               uint64_t Lp)
+uint64_t pseudosquares_prime_sieve(uint64_t start,
+                                   uint64_t stop,
+                                   uint64_t segment_size,
+                                   uint64_t s,
+                                   uint64_t p,
+                                   uint64_t Lp)
 {
     if (start < 2)
         start = 2;
-    if (stop < start)
-        return;
+    if (start > stop)
+        return 0;
 
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
@@ -318,22 +318,18 @@ void pseudosquares_prime_sieve(uint64_t start,
         }
     }
 
-    std::cout << "\nPrimes: " << count << std::endl;
+    return count;
 }
 
-int main(int argc, char** argv)
+// Sieve primes inside [start, stop]
+uint64_t pseudosquares_prime_sieve(uint64_t start,
+                                   uint64_t stop,
+                                   bool is_print)
 {
-    uint64_t start = uint64_t(1e10);
-    uint64_t stop = start + uint64_t(1e6);
-
-    if (argc > 1)
-        start = std::atoll(argv[1]);
-    if (argc > 2)
-        stop = std::atoll(argv[2]);
-    if (stop < start)
-      stop = start + uint64_t(1e6);
-
-    std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
+    if (start > stop)
+        return 0;
+    if (is_print)
+        std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
 
     // In Sorenson's paper the segment size is named ∆,
     // with ∆ = s / log(n). s is the upper bound for
@@ -356,18 +352,18 @@ int main(int argc, char** argv)
             break;
     }
 
-    std::cout << "Sieve size: " << segment_size << " bytes" << std::endl;
-    std::cout << "s: " << s << " (max sieving prime)" << std::endl;
-    std::cout << "p: " << p << " (pseudosquares_prime_test prime)" << std::endl;
-    std::cout << "Lp: " << Lp << " (pseudosquare)" << std::endl;
+    if (is_print)
+    {
+        std::cout << "Sieve size: " << segment_size << " bytes" << std::endl;
+        std::cout << "s: " << s << " (max sieving prime)" << std::endl;
+        std::cout << "p: " << p << " (pseudosquares_prime_test prime)" << std::endl;
+        std::cout << "Lp: " << Lp << " (pseudosquare)" << std::endl;
+    }
 
-    auto t1 = std::chrono::system_clock::now();
+    uint64_t count = pseudosquares_prime_sieve(start, stop, segment_size, s, p, Lp);
 
-    pseudosquares_prime_sieve(start, stop, segment_size, s, p, Lp);
+    if (is_print)
+        std::cout << "\nPrimes: " << count << std::endl;
 
-    auto t2 = std::chrono::system_clock::now();
-    std::chrono::duration<double> seconds = t2 - t1;
-    std::cout << "Seconds: " << std::fixed << std::setprecision(3) << seconds.count() << std::endl;
-
-    return 0;
+    return count;
 }

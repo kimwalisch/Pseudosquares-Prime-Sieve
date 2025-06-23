@@ -1,9 +1,18 @@
 CXX = c++
 CXXFLAGS = -O3 -DNDEBUG -Wall
 
-all:
-	$(CXX) $(CXXFLAGS) pseudosquares_prime_sieve.cpp -o pseudosquares_prime_sieve
+SRCS = main.cpp pseudosquares_prime_sieve.cpp
+OBJS = $(SRCS:.cpp=.o)
+TARGET = pseudosquares_prime_sieve
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
-	rm -f ./pseudosquares_prime_sieve
+	rm -f $(OBJS) $(TARGET)

@@ -1,3 +1,6 @@
 /pseudosquares_prime_sieve
 /*.exe
+/*.obj
+*.o
 /.vscode
+/build
