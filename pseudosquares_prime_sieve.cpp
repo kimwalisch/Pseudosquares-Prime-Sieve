@@ -303,7 +303,7 @@ void pseudosquares_prime_sieve(uint64_t start,
             sp.i = i - max_i;
         }
 
-        // Count the number of primes found
+        // Count primes inside [low, high]
         for (uint64_t n = low; n <= std::min(high, stop); n++)
         {
             if (sieve[n - low])
