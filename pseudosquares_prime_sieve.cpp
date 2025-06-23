@@ -252,7 +252,7 @@ bool pseudosquares_prime_test(uint64_t n, int p)
     return true;
 }
 
-// Sieve the primes inside [start, stop]
+// Sieve primes inside [start, stop]
 void pseudosquares_prime_sieve(uint64_t start,
                                uint64_t stop,
                                uint64_t segment_size,
