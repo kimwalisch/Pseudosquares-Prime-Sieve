@@ -313,11 +313,13 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
 
     for (uint64_t low = start; low <= stop; low += sieve.size())
     {
-        std::fill(sieve.begin(), sieve.end(), true);
-        uint64_t high = std::min(low + sieve.size() - 1, stop);
+        // Sieve current segment [low, high]
+        uint64_t high = low + sieve.size() - 1;
+        high = std::min(high, stop);
         uint64_t sqrt_high = (uint64_t) std::sqrt(high);
         uint64_t max_i = (high - low) + 1;
         max_sieving_prime = std::min(s, sqrt_high);
+        std::fill(sieve.begin(), sieve.end(), true);
 
         // Sieve out multiples of primes <= s
         for (auto& sp : sieving_primes)
@@ -336,7 +338,7 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
                 i = n - low;
             }
 
-            // Cross-off multiples inside [low, high]
+            // Cross-off the multiples of prime
             for (; i < max_i; i += prime)
                 sieve[i] = false;
 
