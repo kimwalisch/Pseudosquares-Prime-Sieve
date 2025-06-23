@@ -42,12 +42,12 @@ int main()
 {
   std::cout << std::left;
   uint64_t count = 0;
-  uint64_t stop = 1;
+  uint128_t stop = 1;
 
   // pi(x) with x = 10^(i+1)
   for (size_t i = 0; i < pix.size(); i++)
   {
-    uint64_t start = stop + 1;
+    uint128_t start = stop + 1;
     stop *= 10;
     count += pseudosquares_prime_sieve(start, stop);
     std::cout << "pi(10^" << i + 1 << ") = " << std::setw(12) << count;
@@ -55,13 +55,13 @@ int main()
   }
 
   std::cout << std::endl;
-  uint64_t start = (uint64_t) 1e12;
+  uint128_t start = (uint128_t) 1e12;
   std::size_t j = 12;
 
   for (std::size_t i = 0; i < pix_2.size(); i++)
   {
     std::cout << "Sieving the primes within [10^" << j << ", 10^" << j << " + 10^6]" << std::endl;
-    uint64_t stop = start + (uint64_t) 1e6;
+    uint128_t stop = start + (uint64_t) 1e6;
     uint64_t count = pseudosquares_prime_sieve(start, stop);
     std::cout << "\rPrime count: " << std::setw(7) << count;
     check(count == pix_2[i]);

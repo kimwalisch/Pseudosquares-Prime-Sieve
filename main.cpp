@@ -19,20 +19,20 @@ int main(int argc, char** argv)
 
     try
     {
-        uint64_t start = 0;
-        uint64_t stop = 0;
+        uint128_t start = 0;
+        uint128_t stop = 0;
 
         if (argc <= 2)
-            stop = calculator::eval<uint64_t>(argv[1]);
+            stop = calculator::eval<uint128_t>(argv[1]);
         else
         {
-            start = calculator::eval<uint64_t>(argv[1]);
-            stop  = calculator::eval<uint64_t>(argv[2]);
+            start = calculator::eval<uint128_t>(argv[1]);
+            stop  = calculator::eval<uint128_t>(argv[2]);
         }
 
         auto t1 = std::chrono::system_clock::now();
 
-        uint64_t count = pseudosquares_prime_sieve(start, stop, true);
+        uint128_t count = pseudosquares_prime_sieve(start, stop, true);
 
         auto t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> seconds = t2 - t1;

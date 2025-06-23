@@ -13,10 +13,10 @@ TEST_OBJS = $(TEST_OBJ) pseudosquares_prime_sieve.o
 all: $(TARGET) $(TEST_BIN)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -lflint
 
 $(TEST_BIN): $(TEST_OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(TEST_OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(TEST_OBJS) -lflint
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

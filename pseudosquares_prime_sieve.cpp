@@ -15,6 +15,8 @@
 
 #include "pseudosquares_prime_sieve.hpp"
 
+#include <flint/fmpz.h>
+
 #include <iostream>
 #include <array>
 #include <cmath>
@@ -176,7 +178,7 @@ std::vector<SievingPrime> get_sieving_primes(uint64_t n)
 // segment size improves performance. Hence, we use a
 // segment size of O(n^(1/4.5)).
 //
-uint64_t get_segment_size(uint64_t stop)
+uint64_t get_segment_size(uint128_t stop)
 {
     uint64_t segment_size = 1 << 14;
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
@@ -184,77 +186,87 @@ uint64_t get_segment_size(uint64_t stop)
     return segment_size;
 }
 
-uint64_t mulmod(uint64_t a, uint64_t b, uint64_t m)
+// Set z = x
+void fmpz_set_ui128(fmpz_t z, uint128_t  x, fmpz_t tmp)
 {
-    __uint128_t r = __uint128_t(a) * b;
-    return (uint64_t)(r % m);
-}
+    uint64_t lo = (uint64_t)x;
+    uint64_t hi = (uint64_t)(x >> 64);
 
-// Modular exponentiation
-uint64_t modpow(uint64_t a, uint64_t e, uint64_t m)
-{
-    uint64_t res = 1;
-    a %= m;
-    while (e) {
-        if (e & 1) res = mulmod(res, a, m);
-        a = mulmod(a, a, m);
-        e >>= 1;
+    if (hi == 0)
+        fmpz_set_ui(z, lo);
+    else
+    {
+        // compute tmp = hi << 64
+        fmpz_set_ui(tmp, hi);
+        fmpz_mul_2exp(tmp, tmp, 64);
+        // z = lo + tmp
+        fmpz_set_ui(z, lo);
+        fmpz_add(z, z, tmp);
     }
-    return res;
 }
 
 // Sorenson's Pseudosquares Prime Test
-bool pseudosquares_prime_test(uint64_t n, int p)
+bool pseudosquares_prime_test(uint128_t n,
+                              int p,
+                              fmpz_t fn,
+                              fmpz_t fe,
+                              fmpz_t fone,
+                              fmpz_t fminus1,
+                              fmpz_t fbase,
+                              fmpz_t fres,
+                              fmpz_t tmp)
 {
-    uint64_t exponent = (n - 1) / 2;
-    uint64_t count_res_minus_1 = 0;
+    fmpz_set_ui128(fn, n, tmp);
+    fmpz_set_ui128(fe, (n - 1) >> 1, tmp);
+    fmpz_sub_ui(fminus1, fn, 1);
+
+    int count_minus1 = 0;
 
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
-    if (n % 8 == 5 && modpow(2, exponent, n) != n - 1)
-        return false;
-
-    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
-    for (uint64_t i = 0; primes[i] <= p; i++)
+    if ((n & 7) == 5)
     {
-        uint64_t res = modpow(primes[i], exponent, n);
-
-        if (res != 1 && res != n - 1)
-            return false; // Violates ±1 requirement
-        if (res == n - 1)
-            count_res_minus_1++;
+        fmpz_set_ui(fbase, 2);
+        fmpz_powm(fres, fbase, fe, fn);
+        if (fmpz_cmp(fres, fminus1) != 0)
+            return false;
     }
 
-    // Condition (4) for n ≡ 1 mod 8: must have at least one res ≡ -1
-    if (n % 8 == 1)
+    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
+    for (std::size_t i = 0; primes[i] <= p; i++)
     {
-        if (count_res_minus_1 > 0)
-            return true;
-        else
-        {
-            // check all q > p: q^((n−1)/2) ≡ ±1 mod n
-            //     while Lq <= n    
-            //
-            // This case is missing in Sorenson's 
-            // "The Pseudosquares Prime Sieve" paper.
-            // Sorenson acknowledged the bug and shared
-            // this fix in an email.
-            for (uint64_t i = prime_pi[p] + 1; i < pseudosquares.size() && pseudosquares[i].Lp <= n; i++)
-            {
-                uint64_t res = modpow(pseudosquares[i].p, exponent, n);
+        fmpz_set_ui(fbase, primes[i]);
+        fmpz_powm(fres, fbase, fe, fn);
 
-                if (res == n - 1)
-                    return true; // res ≡ -1 ⇒ prime
-                if (res != 1)
-                    return false; // composite
-            }
+        if (fmpz_cmp(fres, fone) != 0 && fmpz_cmp(fres, fminus1) != 0)
+            return false;
+        if (fmpz_cmp(fres, fminus1) == 0)
+            count_minus1++;
+    }
+
+    // Condition (4) for n ≡ 1 mod 8:
+    if ((n & 7) == 1)
+    {
+        // Must either have at least one res ≡ -1
+        if (count_minus1 > 0)
+            return true;
+
+        // Or check all q > p while Lq <= n: q^((n−1)/2) ≡ ±1 mod n
+        for (std::size_t i = prime_pi[p] + 1; i < pseudosquares.size() && pseudosquares[i].Lp <= n; i++)
+        {
+            fmpz_set_ui(fbase, pseudosquares[i].p);
+            fmpz_powm(fres, fbase, fe, fn);
+
+            if (fmpz_cmp(fres, fminus1) == 0)
+                return true;
+            if (fmpz_cmp(fres, fone) != 0)
+                return false;
         }
     }
 
-    // Passed all tests — n is prime or a prime power
     return true;
 }
 
-void initialize(uint64_t stop,
+void initialize(uint128_t stop,
                 uint64_t& delta,
                 uint64_t& s,
                 uint64_t& p,
@@ -288,9 +300,26 @@ void initialize(uint64_t stop,
     }
 }
 
+void initialize_fmpz(fmpz_t fn,
+                     fmpz_t fe,
+                     fmpz_t fone,
+                     fmpz_t fminus1,
+                     fmpz_t fbase,
+                     fmpz_t fres,
+                     fmpz_t tmp)
+{
+    fmpz_init(fbase);
+    fmpz_init(fres);
+    fmpz_init(fminus1);
+    fmpz_init(tmp);
+    fmpz_init2(fn, 2);
+    fmpz_init2(fe, 2);
+    fmpz_set_ui(fone, 1);
+}
+
 // Sieve primes inside [start, stop]
-uint64_t pseudosquares_prime_sieve(uint64_t start,
-                                   uint64_t stop,
+uint64_t pseudosquares_prime_sieve(uint128_t start,
+                                   uint128_t stop,
                                    bool is_print)
 {
     if (is_print)
@@ -306,18 +335,23 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
     initialize(stop, delta, s, p, Lp, is_print);
     std::vector<bool> sieve(delta);
 
+    // Flint arbitrary integer variables used
+    // in pseudosquares_prime_test()
+    fmpz_t fn, fe, fone, fminus1, fbase, fres, tmp;
+    initialize_fmpz(fn, fe, fone, fminus1, fbase, fres, tmp);
+
     uint64_t count = 0;
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
     std::vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
 
-    for (uint64_t low = start; low <= stop; low += sieve.size())
+    for (uint128_t low = start; low <= stop; low += sieve.size())
     {
         // Sieve current segment [low, high]
-        uint64_t high = low + sieve.size() - 1;
+        uint128_t high = low + sieve.size() - 1;
         high = std::min(high, stop);
         uint64_t sqrt_high = (uint64_t) std::sqrt(high);
-        uint64_t max_i = (high - low) + 1;
+        uint64_t max_i = uint64_t(high - low) + 1;
         max_sieving_prime = std::min(s, sqrt_high);
         std::fill(sieve.begin(), sieve.end(), true);
 
@@ -331,11 +365,12 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
                 break;
             if (sp.i == -1)
             {
-                uint64_t q = low / prime;
-                uint64_t n = q * prime;
+                uint128_t q = low / prime;
+                uint128_t n = q * prime;
+                uint128_t pp = uint128_t(prime) * prime;
                 n += prime * (n < low);
-                n = std::max(n, prime * prime);
-                i = n - low;
+                n = std::max(n, pp);
+                i = uint64_t(n - low);
             }
 
             // Cross-off the multiples of prime
@@ -346,17 +381,25 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
         }
 
         // Count primes inside [low, high]
-        for (uint64_t n = low; n <= std::min(high, stop); n++)
+        for (uint128_t n = low; n <= std::min(high, stop); n++)
         {
             if (sieve[n - low])
             {
                 if (max_sieving_prime >= sqrt_high)
                     count++;
-                else if (pseudosquares_prime_test(n, p))
+                else if (pseudosquares_prime_test(n, p, fn, fe, fone, fminus1, fbase, fres, tmp))
                     count++;
             }
         }
     }
+
+    fmpz_clear(fn);
+    fmpz_clear(fe);
+    fmpz_clear(fone);
+    fmpz_clear(fminus1);
+    fmpz_clear(fbase);
+    fmpz_clear(fres);
+    fmpz_clear(tmp);
 
     return count;
 }
