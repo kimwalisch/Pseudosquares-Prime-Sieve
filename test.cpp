@@ -1,0 +1,77 @@
+#include "pseudosquares_prime_sieve.hpp"
+
+#include <array>
+#include <cstdlib>
+#include <iostream>
+#include <iomanip>
+#include <stdint.h>
+
+/// Correct pi(x) values to compare with test results
+const std::array<uint64_t, 8> pix =
+{
+  4,        // pi(10^1)
+  25,       // pi(10^2)
+  168,      // pi(10^3)
+  1229,     // pi(10^4)
+  9592,     // pi(10^5)
+  78498,    // pi(10^6)
+  664579,   // pi(10^7)
+  5761455,  // pi(10^8)
+};
+
+const std::array<uint64_t, 8> pix_2 =
+{
+  36249, // pi[10^12, 10^12+10^6]
+  33456, // pi[10^13, 10^13+10^6]
+  30892, // pi[10^14, 10^14+10^6]
+  28845, // pi[10^15, 10^15+10^6]
+  27168, // pi[10^16, 10^16+10^6]
+  25463, // pi[10^17, 10^17+10^6]
+  24280, // pi[10^18, 10^18+10^6]
+  23069  // pi[10^19, 10^19+10^6]
+};
+
+void check(bool OK)
+{
+  std::cout << "   " << (OK ? "OK" : "ERROR") << "\n";
+  if (!OK)
+    std::exit(1);
+}
+
+int main()
+{
+  std::cout << std::left;
+  uint64_t count = 0;
+  uint64_t stop = 1;
+
+  // pi(x) with x = 10^(i+1)
+  for (size_t i = 0; i < pix.size(); i++)
+  {
+    uint64_t start = stop + 1;
+    stop *= 10;
+    count += pseudosquares_prime_sieve(start, stop);
+    std::cout << "pi(10^" << i + 1 << ") = " << std::setw(12) << count;
+    check(count == pix[i]);
+  }
+
+  std::cout << std::endl;
+  uint64_t start = (uint64_t) 1e12;
+  std::size_t j = 12;
+
+  for (std::size_t i = 0; i < pix_2.size(); i++)
+  {
+    std::cout << "Sieving the primes within [10^" << j << ", 10^" << j << " + 10^6]" << std::endl;
+    uint64_t stop = start + (uint64_t) 1e6;
+    uint64_t count = pseudosquares_prime_sieve(start, stop);
+    std::cout << "\rPrime count: " << std::setw(7) << count;
+    check(count == pix_2[i]);
+
+    start *= 10;
+    j++;
+  }
+
+  std::cout << std::endl;
+  std::cout << "All tests passed successfully!" << std::endl;
+
+  return 0;
+}
