@@ -142,6 +142,32 @@ const std::array<Pseudosquare, 58> pseudosquares =
     { 271, 10198100582046287689ull }
 }};
 
+struct SievingPrime
+{
+    uint64_t prime;
+    int64_t i;
+};
+
+// Generate sieving primes <= n
+std::vector<SievingPrime> get_sieving_primes(uint64_t n)
+{
+    std::vector<bool> sieve(n + 1, true);
+
+    for (uint64_t i = 3; i * i <= n; i += 2)
+        if (sieve[i])
+            for (uint64_t j = i * i; j <= n; j += i * 2)
+                sieve[j] = false;
+
+    std::vector<SievingPrime> sieving_primes;
+    sieving_primes.push_back({2, -1});
+
+    for (uint64_t i = 3; i <= n; i += 2)
+        if (sieve[i])
+            sieving_primes.push_back({i, -1});
+
+    return sieving_primes;
+}
+
 // In Sorenson's paper the semgent size is named ∆,
 // with ∆ = s / log(n). We also have ∆ = Θ(π(p) log n).
 // Sorenson's paper also mentions that using a larger
@@ -154,26 +180,6 @@ uint64_t get_segment_size(uint64_t stop)
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
     segment_size = std::max(segment_size, root4_stop);
     return segment_size;
-}
-
-// Generate sieving primes <= n
-std::vector<uint64_t> get_sieving_primes(uint64_t n)
-{
-    std::vector<bool> sieve(n + 1, true);
-
-    for (uint64_t i = 3; i * i <= n; i += 2)
-        if (sieve[i])
-            for (uint64_t j = i * i; j <= n; j += i * 2)
-                sieve[j] = false;
-
-    std::vector<uint64_t> sieving_primes;
-    sieving_primes.push_back(2);
-
-    for (uint64_t i = 3; i <= n; i += 2)
-        if (sieve[i])
-            sieving_primes.push_back(i);
-
-    return sieving_primes;
 }
 
 uint64_t mulmod(uint64_t a, uint64_t b, uint64_t m)
@@ -256,29 +262,40 @@ void pseudosquares_prime_sieve(uint64_t start,
 {
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
-    const auto sieving_primes = get_sieving_primes(max_sieving_prime);
+    std::vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
     std::vector<bool> sieve(segment_size);
     uint64_t count = 0;
 
     for (uint64_t low = start; low <= stop; low += sieve.size())
     {
-        uint64_t sqrt_low = (uint64_t) std::sqrt(low);
-        uint64_t high = std::min(low + sieve.size() - 1, stop);
-        uint64_t limit = std::min(s, sqrt_low);
         std::fill(sieve.begin(), sieve.end(), true);
+        uint64_t high = std::min(low + sieve.size(), stop);
+        uint64_t sqrt_low = (uint64_t) std::sqrt(low);
+        uint64_t max_i = high - low;
+        max_sieving_prime = std::min(s, sqrt_low);
 
-        // Sieve out multiple of primes <= s
-        for (uint64_t prime : sieving_primes)
+        // Sieve out multiples of primes <= s
+        for (auto& sp : sieving_primes)
         {
-            if (prime > limit) break;
-            uint64_t q = low / prime;
-            uint64_t n = q * prime;
-            n += prime * (n < low);
-            n = std::max(n, prime * prime);
+            uint64_t prime = sp.prime;
+            uint64_t i = sp.i;
 
-            // Cross-off multiples inside [low, high]
-            for (; n <= high; n += prime)
-                sieve[n - low] = false;
+            if (prime > max_sieving_prime)
+                break;
+            if (sp.i == -1)
+            {
+                uint64_t q = low / prime;
+                uint64_t n = q * prime;
+                n += prime * (n < low);
+                n = std::max(n, prime * prime);
+                i = n - low;
+            }
+
+            // Cross-off multiples inside [low, high[
+            for (; i < max_i; i += prime)
+                sieve[i] = false;
+
+            sp.i = i - max_i;
         }
 
         for (uint64_t i = 0; i < sieve.size() && low + i <= stop; i++)
