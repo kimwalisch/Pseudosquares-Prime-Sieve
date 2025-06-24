@@ -91,7 +91,7 @@ int main(int argc, char** argv)
             int max_threads = std::thread::hardware_concurrency();
             max_threads = std::max(1, max_threads);
 
-            if (threads > 1)
+            if (threads > 0)
                 threads = std::min(threads, max_threads);
             else
             {
