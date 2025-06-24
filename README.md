@@ -32,17 +32,16 @@ You need to have installed a C++ compiler which supports 128-bit integers (eithe
 # Build instructions
 
 ```bash
-# Build
-$ cmake .
-$ cmake --build . --parallel
+cmake .
+cmake --build . --parallel
 ```
 
 # Usage examples
 
 ```bash
 # Count the primes inside [low, high]
-$ ./pseudosquares_prime_sieve 1e15 1e15+1e7
+./pseudosquares_prime_sieve 1e15 1e15+1e7
 
 # Run tests
-$ ./tests
+./tests
 ```
