@@ -11,6 +11,23 @@
 #include <iostream>
 #include <stdint.h>
 
+void help(int exit_code)
+{
+    const std::string help_menu =
+        "Usage: pseudosquares_prime_sieve [START] STOP\n"
+        "Sieve the primes inside [START, STOP] (<= 10^34) using\n"
+        "J. P. Sorenson's Pseudosquares Prime Sieve.\n"
+        "\n"
+        "Options:\n"
+        "  -h, --help         Print this help menu.\n"
+        "  -p, --print        Print primes to the standard output.\n"
+        "  -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
+        "                     Default setting: use all available CPU cores.\n";
+
+    std::cout << help_menu << std::endl;
+    std::exit(exit_code);
+}
+
 namespace {
 
 // In Sorenson's paper the semgent size is named ∆,
@@ -28,23 +45,6 @@ uint64_t get_segment_size(uint128_t stop)
 }
 
 } // namespace
-
-void help(int exit_code)
-{
-    const std::string help_menu =
-        "Usage: pseudosquares_prime_sieve [START] STOP\n"
-        "Sieve the primes inside [START, STOP] (<= 10^34) using\n"
-        "J. P. Sorenson's Pseudosquares Prime Sieve.\n"
-        "\n"
-        "Options:\n"
-        "  -h, --help         Print this help menu.\n"
-        "  -p, --print        Print primes to the standard output.\n"
-        "  -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
-        "                     Default setting: use all available CPU cores.\n";
-
-    std::cout << help_menu << std::endl;
-    std::exit(exit_code);
-}
 
 int main(int argc, char** argv)
 {
