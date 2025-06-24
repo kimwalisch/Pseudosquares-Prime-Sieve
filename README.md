@@ -106,4 +106,5 @@ Start testing $q^{(n-1)/2} \pmod{n}$ for primes $q$ above $p$, one at a time, un
 
 * You get a -1 result, in which case $n$ is prime.
 * You get something other than a ±1 result, in which case $n$ is not prime.
+* You can't keep getting +1 results forever, unless $n$ is a perfect power. According to Sorenson's paper this case can only occur if $n > 6.4 \cdot 10^{37}$.
 * If $n > L_p$, in which case $n$ is a prime or a square.
