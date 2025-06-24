@@ -7,7 +7,7 @@ if(NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-find_package(OpenMP REQUIRED)
+find_package(Threads REQUIRED QUIET)
 
 # Find FLINT
 find_path(FLINT_INCLUDE_DIR flint/fmpz.h)
@@ -22,7 +22,7 @@ set(SRC_FILES main.cpp pseudosquares_prime_sieve.cpp)
 
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
-target_link_libraries(pseudosquares_prime_sieve ${FLINT_LIBRARY} OpenMP::OpenMP_CXX)
+target_link_libraries(pseudosquares_prime_sieve ${FLINT_LIBRARY} Threads::Threads)
 
 # Test executable
 enable_testing()

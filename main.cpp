@@ -1,15 +1,28 @@
+///
+/// @file   main.cpp
+/// @brief  Command-line program which uses the Pseudosquares Prime
+///         Sieve algorithm to generate primes ≤ 1.23 * 10^34.
+///         The algorithm has been parallelized using std::async.
+///
+/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+///
+/// This file is distributed under the BSD License. See the COPYING
+/// file in the top level directory.
+///
+
 #include "pseudosquares_prime_sieve.hpp"
 #include "CmdOptions.hpp"
-
-#include <omp.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <stdint.h>
+#include <thread>
+#include <vector>
 
 void help(int exit_code)
 {
@@ -86,12 +99,11 @@ int main(int argc, char** argv)
             {
                 uint64_t delta = get_segment_size(stop);
                 double s = delta * std::log(std::max(10.0, (double) stop));
-                double max_threads = (double) omp_get_max_threads();
+                double max_threads = std::thread::hardware_concurrency();
                 double t = std::min((stop - start) / s, max_threads);
                 threads = (int) std::max(1.0, t);
             }
 
-            // Use only 1 thread with --print option
             if (opts.print_primes)
                 threads = 1;
 
@@ -104,17 +116,23 @@ int main(int argc, char** argv)
                 std::cout << std::endl;
             }
 
-            #pragma omp parallel for num_threads(threads) reduction(+: count)
+            std::vector<std::future<uint64_t>> futures;
+            futures.reserve(threads);
+
             for (int i = 0; i < threads; i++)
             {
-                // Sieve primes inside [low, high]
                 uint128_t low = start + i * thread_dist;
                 uint128_t high = low + thread_dist - 1;
                 high = std::min(high, stop);
                 bool verbose = (i == 0) && !opts.print_primes;
 
-                count += pseudosquares_prime_sieve(low, high, opts.print_primes, verbose);
+                futures.emplace_back(std::async(std::launch::async, [=]() {
+                    return pseudosquares_prime_sieve(low, high, opts.print_primes, verbose);
+                }));
             }
+
+            for (auto& fut : futures)
+                count += fut.get();
         }
 
         auto t2 = std::chrono::system_clock::now();
