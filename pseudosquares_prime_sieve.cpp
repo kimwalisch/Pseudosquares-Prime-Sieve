@@ -310,7 +310,7 @@ void initialize(uint128_t stop,
     s = delta * log_stop;
 
     // We have a list of known pseudosquares up to
-    // Lp = L_373 ~ 4.2 * 10^24. Hence, using
+    // max(Lp) = L_373 ~ 4.2 * 10^24. Hence, using
     // delta = n^(1/4.5) and s = delta * log(n)
     // we can sieve primes up to n:
     // n / s < Lp
