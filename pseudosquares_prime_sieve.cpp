@@ -212,8 +212,9 @@ bool pseudosquares_prime_test(uint128_t n,
                               int p,
                               Mpz& z)
 {
+    uint128_t e = (n - 1) >> 1;
     mpz_set_ui128(z.n, n);
-    mpz_set_ui128(z.e, (n - 1) >> 1);
+    mpz_set_ui128(z.e, e);
     mpz_sub_ui(z.minus1, z.n, 1);
 
     int count_minus1 = 0;
