@@ -84,7 +84,7 @@ for(d=W[p%m].next; d<=min(s,sqrt(l)); d=d+W[d%m].next)
             B.clear(x);
 ```
 
-In the code section above from Sorenson's paper, one sieves using the integers ≤ `min(s,sqrt(l))`. The variable `l` (left) corresponds to the lower bound of the current segment, but its use is incorrect here. One needs to use the current segment's upper bound instead, which is named `r` (right) in Sorenson's paper:
+In the code snippet above from Sorenson's paper, one sieves using the integers ≤ `min(s,sqrt(l))`. The variable `l` (left) corresponds to the lower bound of the current segment, but its use is incorrect here. One needs to use the current segment's upper bound instead, which is named `r` (right) in Sorenson's paper:
 
 ```C++
 //** Sieve by integers d up to s, gcd(d,m)=1
