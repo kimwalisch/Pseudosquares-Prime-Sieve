@@ -1,6 +1,6 @@
 # Pseudosquares Prime Sieve
 
-This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1095&context=facsch_papers) algorithm, which is one of the few prime sieving algorithms that is well suited for generating primes > 2^64. The Pseudosquares Prime Sieve uses much less memory than most other prime sieving algorithms: it has a conjectured runtime complexity of O(n log n) operations and uses O((log n)^2) space.
+This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1095&context=facsch_papers) algorithm, which is one of the few prime sieving algorithms that is well suited for generating primes > $2^{64}$. The Pseudosquares Prime Sieve uses much less memory than most other prime sieving algorithms: it has a conjectured runtime complexity of $O(n\cdot\log{n})$ operations and uses $O(\log^2{n})$ space.
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ cmake --build . --parallel
 
 # Usage examples
 
-The ```pseudosquares_prime_sieve``` program can generate primes ≤ $10^{34}$ using little memory. Each thread uses about $\sqrt[4.5]{n} \times 16$ bytes of memory. Hence, when sieving near $10^{30}$, each thread uses about $\sqrt[4.5]{10^{30}} = 4.4$ megabytes of memory.
+The ```pseudosquares_prime_sieve``` program can generate primes ≤ $10^{34}$ using little memory. In our implementation, each thread uses about $\sqrt[4.5]{n} \times 16$ bytes of memory. Hence, when sieving near $10^{30}$, each thread uses about $\sqrt[4.5]{10^{30}} = 4.4$ megabytes of memory.
 
 ```bash
 # Count primes inside [low, high] using all CPU cores
