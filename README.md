@@ -34,14 +34,36 @@ You need to have installed a C++ compiler which supports 128-bit integers (eithe
 ```bash
 cmake .
 cmake --build . --parallel
+
+# Run tests
+./tests
 ```
 
 # Usage examples
 
-```bash
-# Count the primes inside [low, high]
-./pseudosquares_prime_sieve 1e15 1e15+1e7
+The ```pseudosquares_prime_sieve``` program can generate primes ≤ $10^{34}$ using little memory. Each thread uses about $\sqrt[4.5]{n} \times 16$ bytes of memory. Hence, when sieving near $10^{30}$, each thread uses about $\sqrt[4.5]{10^{30}} = 4.4$ megabytes of memory.
 
-# Run tests
-./tests
+```bash
+# Count primes inside [low, high] using all CPU cores
+./pseudosquares_prime_sieve 1e15 1e15+1e8
+
+# Count primes inside [low, high] using 4 threads
+./pseudosquares_prime_sieve 1e15 1e15+1e8 --threads=4
+
+# Print primes inside [low, high] to stdout
+./pseudosquares_prime_sieve 1e25 1e25+1e4 --print
+```
+
+# Command-line options
+
+```
+Usage: pseudosquares_prime_sieve [START] STOP
+Sieve the primes inside [START, STOP] (<= 10^34) using
+J. P. Sorenson's Pseudosquares Prime Sieve.
+
+Options:
+  -h, --help         Print this help menu.
+  -p, --print        Print primes to the standard output.
+  -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.
+                     Default setting: use all available CPU cores.
 ```
