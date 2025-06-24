@@ -31,10 +31,17 @@ uint64_t get_segment_size(uint128_t stop)
 
 void help(int exit_code)
 {
-    std::cout << "Usage: pseudosquares_prime_sieve [START] STOP" << std::endl
-              << "Sieve the primes inside [START, STOP] (<= 10^34) using" << std::endl
-              << "J. P. Sorenson's Pseudosquares Prime Sieve." << std::endl;
+    const std::string help_menu =
+        "Usage: pseudosquares_prime_sieve [START] STOP\n"
+        "Sieve the primes inside [START, STOP] (<= 10^34) using\n"
+        "J. P. Sorenson's Pseudosquares Prime Sieve.\n"
+        "\n"
+        "Options:\n"
+        " -h, --help         Print this help menu.\n"
+        " -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
+        "                    Default setting: use all available CPU cores.\n";
 
+    std::cout << help_menu << std::endl;
     std::exit(exit_code);
 }
 
