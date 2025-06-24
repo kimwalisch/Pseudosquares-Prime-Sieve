@@ -4,28 +4,28 @@ This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](htt
 
 ## Prerequisites
 
-You need to have installed a C++ compiler which supports 128-bit integers (either GNU GCC or LLVM/Clang), CMake ≥ 3.10 and the FLINT C library. The performance of the Pseudosquares Prime Sieve algorithm depends on fast modular exponentiation, which the FLINT C library provides.
+You need to have installed a C++ compiler which supports 128-bit integers (either GNU GCC or LLVM/Clang), CMake ≥ 3.10 and the GMP C library. The performance of the Pseudosquares Prime Sieve algorithm depends on fast modular exponentiation, which the GMP C library provides.
 
 <table>
     <tr>
         <td><b>Arch Linux:</b></td>
-        <td><code>sudo pacman -S gcc cmake flint</code></td>
+        <td><code>sudo pacman -S gcc cmake gmp</code></td>
     </tr>
     <tr>
         <td><b>Debian/Ubuntu:</b></td>
-        <td><code>sudo apt install g++ cmake libflint-dev</code></td>
+        <td><code>sudo apt install g++ cmake libgmp-dev</code></td>
     </tr>
     <tr>
         <td><b>Fedora:</b></td>
-        <td><code>sudo dnf install gcc-c++ cmake flint-devel</code></td>
+        <td><code>sudo dnf install gcc-c++ cmake gmp-devel</code></td>
     </tr>
     <tr>
         <td><b>macOS:</b></td>
-        <td><code>brew install cmake flint</code></td>
+        <td><code>brew install cmake gmp</code></td>
     </tr>
     <tr>
         <td><b>openSUSE:</b></td>
-        <td><code>sudo zypper install gcc-c++ cmake libflint-devel</code></td>
+        <td><code>sudo zypper install gcc-c++ cmake gmp-devel</code></td>
     </tr>
 </table>
 

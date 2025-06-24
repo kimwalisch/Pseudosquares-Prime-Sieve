@@ -9,12 +9,12 @@ endif()
 
 find_package(Threads REQUIRED QUIET)
 
-# Find FLINT
-find_path(FLINT_INCLUDE_DIR flint/fmpz.h)
-find_library(FLINT_LIBRARY NAMES flint)
+# Find GMP C library
+find_path(GMP_HEADER gmp.h)
+find_library(GMP_LIBRARY NAMES gmp)
 
-if(NOT FLINT_INCLUDE_DIR OR NOT FLINT_LIBRARY)
-    message(FATAL_ERROR "FLINT C library not found. Please install FLINT first.")
+if(NOT GMP_HEADER OR NOT GMP_LIBRARY)
+    message(FATAL_ERROR "GMP C library not found. Please install the GMP C library.")
 endif()
 
 # Source files
@@ -22,12 +22,12 @@ set(SRC_FILES main.cpp pseudosquares_prime_sieve.cpp)
 
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
-target_link_libraries(pseudosquares_prime_sieve ${FLINT_LIBRARY} Threads::Threads)
+target_link_libraries(pseudosquares_prime_sieve ${GMP_LIBRARY} Threads::Threads)
 
 # Test executable
 enable_testing()
 add_executable(tests tests.cpp pseudosquares_prime_sieve.cpp)
-target_link_libraries(tests ${FLINT_LIBRARY})
+target_link_libraries(tests ${GMP_LIBRARY})
 
 # Register test with CTest
 add_test(NAME tests COMMAND tests)
