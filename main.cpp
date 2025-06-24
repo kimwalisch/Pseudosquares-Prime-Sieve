@@ -36,7 +36,8 @@ int main(int argc, char** argv)
 
         auto t1 = std::chrono::system_clock::now();
 
-        uint128_t count = pseudosquares_prime_sieve(start, stop, true);
+        set_verbose(true);
+        uint128_t count = pseudosquares_prime_sieve(start, stop);
 
         auto t2 = std::chrono::system_clock::now();
         std::chrono::duration<double> seconds = t2 - t1;

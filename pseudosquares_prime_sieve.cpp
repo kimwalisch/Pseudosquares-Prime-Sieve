@@ -28,6 +28,9 @@
 
 namespace {
 
+// Enable/disable --verbose option
+bool verbose = false;
+
 // First 128 primes
 const std::array<int, 128> primes =
 {
@@ -297,8 +300,7 @@ void initialize(uint128_t stop,
                 uint64_t& delta,
                 uint64_t& s,
                 uint64_t& p,
-                uint64_t& Lp,
-                bool is_print)
+                uint64_t& Lp)
 {
     // In Sorenson's paper the segment size is named ∆,
     // with ∆ = s / log(n). s is the upper bound for
@@ -328,7 +330,7 @@ void initialize(uint128_t stop,
             break;
     }
 
-    if (is_print)
+    if (verbose)
     {
         std::cout << "Sieve size: " << delta << " bytes" << std::endl;
         std::cout << "s: " << s << " (max sieving prime)" << std::endl;
@@ -356,10 +358,15 @@ void initialize_fmpz(fmpz_t fn,
 
 } // namespace
 
+// Enable/disable --verbose option
+void set_verbose(bool v)
+{
+    verbose = v;
+}
+
 // Sieve primes inside [start, stop]
 uint64_t pseudosquares_prime_sieve(uint128_t start,
-                                   uint128_t stop,
-                                   bool is_print)
+                                   uint128_t stop)
 {
     if (start < 2)
         start = 2;
@@ -380,7 +387,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
 
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p, Lp;
-    initialize(stop, delta, s, p, Lp, is_print);
+    initialize(stop, delta, s, p, Lp);
     std::vector<bool> sieve(delta);
 
     // Flint arbitrary integer variables used
