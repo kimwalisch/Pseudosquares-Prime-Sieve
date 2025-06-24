@@ -171,46 +171,6 @@ const std::array<Pseudosquare, 74> pseudosquares =
     { 373, to_uint128("4235025223080597503519329") }
 }};
 
-struct SievingPrime
-{
-    uint64_t prime;
-    int64_t i;
-};
-
-// Generate sieving primes <= n
-std::vector<SievingPrime> get_sieving_primes(uint64_t n)
-{
-    std::vector<bool> sieve(n + 1, true);
-
-    for (uint64_t i = 3; i * i <= n; i += 2)
-        if (sieve[i])
-            for (uint64_t j = i * i; j <= n; j += i * 2)
-                sieve[j] = false;
-
-    std::vector<SievingPrime> sieving_primes;
-    sieving_primes.push_back({2, -1});
-
-    for (uint64_t i = 3; i <= n; i += 2)
-        if (sieve[i])
-            sieving_primes.push_back({i, -1});
-
-    return sieving_primes;
-}
-
-// In Sorenson's paper the semgent size is named ∆,
-// with ∆ = s / log(n). We also have ∆ = Θ(π(p) log n).
-// Sorenson's paper also mentions that using a larger
-// segment size improves performance. Hence, we use a
-// segment size of O(n^(1/4.5)).
-//
-uint64_t get_segment_size(uint128_t stop)
-{
-    uint64_t segment_size = 1 << 14;
-    uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
-    segment_size = std::max(segment_size, root4_stop);
-    return segment_size;
-}
-
 // GMP bignum variables
 struct Mpz
 {
@@ -302,6 +262,46 @@ bool pseudosquares_prime_test(uint128_t n,
     }
 
     return true;
+}
+
+struct SievingPrime
+{
+    uint64_t prime;
+    int64_t i;
+};
+
+// Generate sieving primes <= n
+std::vector<SievingPrime> get_sieving_primes(uint64_t n)
+{
+    std::vector<bool> sieve(n + 1, true);
+
+    for (uint64_t i = 3; i * i <= n; i += 2)
+        if (sieve[i])
+            for (uint64_t j = i * i; j <= n; j += i * 2)
+                sieve[j] = false;
+
+    std::vector<SievingPrime> sieving_primes;
+    sieving_primes.push_back({2, -1});
+
+    for (uint64_t i = 3; i <= n; i += 2)
+        if (sieve[i])
+            sieving_primes.push_back({i, -1});
+
+    return sieving_primes;
+}
+
+// In Sorenson's paper the semgent size is named ∆,
+// with ∆ = s / log(n). We also have ∆ = Θ(π(p) log n).
+// Sorenson's paper also mentions that using a larger
+// segment size improves performance. Hence, we use a
+// segment size of O(n^(1/4.5)).
+//
+uint64_t get_segment_size(uint128_t stop)
+{
+    uint64_t segment_size = 1 << 14;
+    uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
+    segment_size = std::max(segment_size, root4_stop);
+    return segment_size;
 }
 
 void initialize(uint128_t stop,
