@@ -419,9 +419,9 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
             sp.i = i - max_i;
         }
 
-        // All sieve[i]=true correspond to prime numbers
         for (uint128_t n = low; n <= high; n++)
         {
+            // sieve[i]=true is a prime
             if (sieve[n - low])
             {
                 if (max_sieving_prime >= sqrt_high)
