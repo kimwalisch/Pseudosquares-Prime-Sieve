@@ -23,11 +23,15 @@ int main(int argc, char** argv)
         uint128_t stop = 0;
 
         if (argc <= 2)
+        {
             stop = calculator::eval<uint128_t>(argv[1]);
+            std::cout << "Sieving primes inside [0, " << argv[1] << "]" << std::endl;
+        }
         else
         {
             start = calculator::eval<uint128_t>(argv[1]);
             stop  = calculator::eval<uint128_t>(argv[2]);
+            std::cout << "Sieving primes inside [" << argv[1] << ", " << argv[2] << "]" << std::endl;
         }
 
         auto t1 = std::chrono::system_clock::now();

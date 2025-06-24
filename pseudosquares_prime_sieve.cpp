@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <stdexcept>
 #include <stdint.h>
 
 // First 128 primes
@@ -214,10 +215,10 @@ bool pseudosquares_prime_test(uint128_t n,
                               fmpz_t fminus1,
                               fmpz_t fbase,
                               fmpz_t fres,
-                              fmpz_t tmp)
+                              fmpz_t ftmp)
 {
-    fmpz_set_ui128(fn, n, tmp);
-    fmpz_set_ui128(fe, (n - 1) >> 1, tmp);
+    fmpz_set_ui128(fn, n, ftmp);
+    fmpz_set_ui128(fe, (n - 1) >> 1, ftmp);
     fmpz_sub_ui(fminus1, fn, 1);
 
     int count_minus1 = 0;
@@ -251,6 +252,8 @@ bool pseudosquares_prime_test(uint128_t n,
             return true;
 
         // Or check all q > p while Lq <= n: q^((n−1)/2) ≡ ±1 mod n
+        // This step is missing in Sorenson's paper. Sorenson
+        // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; i < pseudosquares.size() && pseudosquares[i].Lp <= n; i++)
         {
             fmpz_set_ui(fbase, pseudosquares[i].p);
@@ -306,12 +309,12 @@ void initialize_fmpz(fmpz_t fn,
                      fmpz_t fminus1,
                      fmpz_t fbase,
                      fmpz_t fres,
-                     fmpz_t tmp)
+                     fmpz_t ftmp)
 {
     fmpz_init(fbase);
     fmpz_init(fres);
     fmpz_init(fminus1);
-    fmpz_init(tmp);
+    fmpz_init(ftmp);
     fmpz_init2(fn, 2);
     fmpz_init2(fe, 2);
     fmpz_set_ui(fone, 1);
@@ -322,13 +325,17 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
                                    uint128_t stop,
                                    bool is_print)
 {
-    if (is_print)
-        std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
-
     if (start < 2)
         start = 2;
     if (start > stop)
         return 0;
+
+    // After having run sieving and the pseudosquares prime
+    // test, one has to remove perfect powers. Our implementation
+    // misses this final step and is hence limited to
+    // n <= 6.4 * 10^37 (according to Sorenson's paper).
+    if ((double) stop > 6e37)
+        throw std::runtime_error("stop must be <= 6 * 10^37");
 
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p, Lp;
@@ -337,8 +344,8 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
 
     // Flint arbitrary integer variables used
     // in pseudosquares_prime_test()
-    fmpz_t fn, fe, fone, fminus1, fbase, fres, tmp;
-    initialize_fmpz(fn, fe, fone, fminus1, fbase, fres, tmp);
+    fmpz_t fn, fe, fone, fminus1, fbase, fres, ftmp;
+    initialize_fmpz(fn, fe, fone, fminus1, fbase, fres, ftmp);
 
     uint64_t count = 0;
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
@@ -387,7 +394,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
             {
                 if (max_sieving_prime >= sqrt_high)
                     count++;
-                else if (pseudosquares_prime_test(n, p, fn, fe, fone, fminus1, fbase, fres, tmp))
+                else if (pseudosquares_prime_test(n, p, fn, fe, fone, fminus1, fbase, fres, ftmp))
                     count++;
             }
         }
@@ -399,7 +406,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     fmpz_clear(fminus1);
     fmpz_clear(fbase);
     fmpz_clear(fres);
-    fmpz_clear(tmp);
+    fmpz_clear(ftmp);
 
     return count;
 }
