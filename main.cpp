@@ -37,9 +37,10 @@ void help(int exit_code)
         "J. P. Sorenson's Pseudosquares Prime Sieve.\n"
         "\n"
         "Options:\n"
-        " -h, --help         Print this help menu.\n"
-        " -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
-        "                    Default setting: use all available CPU cores.\n";
+        "  -h, --help         Print this help menu.\n"
+        "  -p, --print        Print primes to the standard output.\n"
+        "  -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
+        "                     Default setting: use all available CPU cores.\n";
 
     std::cout << help_menu << std::endl;
     std::exit(exit_code);
@@ -59,14 +60,19 @@ int main(int argc, char** argv)
 
         if (opts.numbers.size() == 1)
         {
-            stop = opts.numbers[0];
-            std::cout << "Sieving primes inside [0, " << argv[1] << "]" << std::endl;
+            stop = opts.numbers.at(0);
+            std::string stop_str = opts.numbers_str.at(0);
+            if (!opts.print_primes)
+                std::cout << "Sieving primes inside [0, " << stop_str << "]" << std::endl;
         }
         else
         {
-            start = opts.numbers[0];
-            stop  = opts.numbers[1];
-            std::cout << "Sieving primes inside [" << argv[1] << ", " << argv[2] << "]" << std::endl;
+            start = opts.numbers.at(0);
+            stop  = opts.numbers.at(1);
+            std::string start_str = opts.numbers_str.at(0);
+            std::string stop_str = opts.numbers_str.at(1);
+            if (!opts.print_primes)
+                std::cout << "Sieving primes inside [" << start_str << ", " << stop_str << "]" << std::endl;
         }
 
         auto t1 = std::chrono::system_clock::now();
@@ -85,10 +91,18 @@ int main(int argc, char** argv)
                 threads = (int) std::max(1.0, t);
             }
 
+            // Use only 1 thread with --print option
+            if (opts.print_primes)
+                threads = 1;
+
             uint128_t thread_dist = (stop - start) / threads + 1;
-            std::cout << "Thread dist: " << thread_dist << std::endl;
-            std::cout << "Threads: " << threads << std::endl;
-            std::cout << std::endl;
+
+            if (!opts.print_primes)
+            {
+                std::cout << "Thread dist: " << thread_dist << std::endl;
+                std::cout << "Threads: " << threads << std::endl;
+                std::cout << std::endl;
+            }
 
             #pragma omp parallel for num_threads(threads) reduction(+: count)
             for (int i = 0; i < threads; i++)
@@ -97,9 +111,9 @@ int main(int argc, char** argv)
                 uint128_t low = start + i * thread_dist;
                 uint128_t high = low + thread_dist - 1;
                 high = std::min(high, stop);
-                bool verbose = (i == 0);
+                bool verbose = (i == 0) && !opts.print_primes;
 
-                count += pseudosquares_prime_sieve(low, high, verbose);
+                count += pseudosquares_prime_sieve(low, high, opts.print_primes, verbose);
             }
         }
 

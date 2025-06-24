@@ -359,6 +359,7 @@ void initialize_fmpz(fmpz_t fn,
 // Sieve primes inside [start, stop]
 uint64_t pseudosquares_prime_sieve(uint128_t start,
                                    uint128_t stop,
+                                   bool print_primes,
                                    bool verbose)
 {
     if (start < 2)
@@ -434,9 +435,17 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
             if (sieve[n - low])
             {
                 if (max_sieving_prime >= sqrt_high)
+                {
                     count++;
+                    if (print_primes)
+                        std::cout << n << "\n";
+                }
                 else if (pseudosquares_prime_test(n, p, fn, fe, fone, fminus1, fbase, fres, ftmp))
+                {
                     count++;
+                    if (print_primes)
+                        std::cout << n << "\n";
+                }
             }
         }
     }

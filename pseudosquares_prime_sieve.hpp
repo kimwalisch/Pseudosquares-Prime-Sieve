@@ -73,6 +73,7 @@ inline std::ostream& operator<<(std::ostream& stream, uint128_t n)
 // Sieve primes inside [start, stop]
 uint64_t pseudosquares_prime_sieve(uint128_t start,
                                    uint128_t stop,
+                                   bool print_primes = false,
                                    bool verbose = false);
 
 #endif

@@ -31,6 +31,7 @@ enum OptionID
 {
   OPTION_HELP,
   OPTION_NUMBER,
+  OPTION_PRINT,
   OPTION_THREADS
 };
 
@@ -60,9 +61,11 @@ struct Option
 struct CmdOptions
 {
   std::vector<uint128_t> numbers;
+  std::vector<std::string> numbers_str;
   std::string optionStr;
   int option = -1;
   int threads = 0;
+  bool print_primes = false;
 };
 
 /// Some command-line options require an additional parameter.
@@ -225,6 +228,8 @@ CmdOptions parseOptions(int argc, char* argv[])
     { "-h",                 std::make_pair(OPTION_HELP, NO_PARAM) },
     { "--help",             std::make_pair(OPTION_HELP, NO_PARAM) },
     { "--number",           std::make_pair(OPTION_NUMBER, REQUIRED_PARAM) },
+    { "-p",                 std::make_pair(OPTION_PRINT, OPTIONAL_PARAM) },
+    { "--print",            std::make_pair(OPTION_PRINT, OPTIONAL_PARAM) },
     { "-t",                 std::make_pair(OPTION_THREADS, REQUIRED_PARAM) },
     { "--threads",          std::make_pair(OPTION_THREADS, REQUIRED_PARAM) }
   };
@@ -238,8 +243,10 @@ CmdOptions parseOptions(int argc, char* argv[])
 
     switch (optionID)
     {
+      case OPTION_NUMBER:  opts.numbers.push_back(opt.getValue<uint128_t>());
+                           opts.numbers_str.push_back(opt.val); break;
+      case OPTION_PRINT:   opts.print_primes = true; break;
       case OPTION_THREADS: opts.threads = opt.getValue<int>(); break;
-      case OPTION_NUMBER:  opts.numbers.push_back(opt.getValue<uint128_t>()); break;
       case OPTION_HELP:    help(0); break;
     }
   }
