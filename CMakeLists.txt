@@ -9,6 +9,15 @@ endif()
 
 find_package(Threads REQUIRED QUIET)
 
+# On macOS we assume the default package manager is homebrew
+if(APPLE AND NOT GMP_INCLUDE_DIR)
+    set(GMP_INCLUDE_DIR "/opt/homebrew/include")
+endif()
+
+if(GMP_INCLUDE_DIR)
+    include_directories("${GMP_INCLUDE_DIR}")
+endif()
+
 # Find GMP C library
 find_path(GMP_HEADER gmp.h)
 find_library(GMP_LIBRARY NAMES gmp)
