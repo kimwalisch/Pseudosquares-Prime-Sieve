@@ -14,6 +14,7 @@
 ///
 
 #include "pseudosquares_prime_sieve.hpp"
+#include "calculator.hpp"
 
 #include <flint/fmpz.h>
 
@@ -24,6 +25,8 @@
 #include <vector>
 #include <stdexcept>
 #include <stdint.h>
+
+namespace {
 
 // First 128 primes
 const std::array<int, 128> primes =
@@ -78,73 +81,94 @@ const std::array<uint8_t, 450> prime_pi =
     84,  84,  84,  84,  85,  85,  85,  85,  86,  86,  86,  86,  86,  86,  87
 };
 
+uint128_t to_uint128(const char* str)
+{
+    return calculator::eval<uint128_t>(str);
+}
+
 struct Pseudosquare
 {
     int p;
-    uint64_t Lp;
+    uint128_t Lp;
 };
 
-// Static pseudosquare table up to p = 271
-const std::array<Pseudosquare, 58> pseudosquares =
+// List of known pseudosquares <= 4.2 * 10^24
+const std::array<Pseudosquare, 74> pseudosquares =
 {{
-    { 2,   17 },
-    { 3,   73 },
-    { 5,   241 },
-    { 7,   1009 },
-    { 11,  2641 },
-    { 13,  8089 },
-    { 17,  18001 },
-    { 19,  53881 },
-    { 23,  87481 },
-    { 29,  117049 },
-    { 31,  515761 },
-    { 37,  1083289 },
-    { 41,  3206641 },
-    { 43,  3818929 },
-    { 47,  9257329 },
-    { 53,  22000801 },
-    { 59,  48473881 },
-    { 61,  48473881 },
-    { 67,  175244281 },
-    { 71,  427733329 },
-    { 73,  427733329 },
-    { 79,  898716289 },
-    { 83,  2805544681 },
-    { 89,  2805544681 },
-    { 97,  2805544681 },
-    { 101, 10310263441 },
-    { 103, 23616331489 },
-    { 107, 85157610409 },
-    { 109, 85157610409 },
-    { 113, 196265095009 },
-    { 127, 196265095009 },
-    { 131, 2871842842801 },
-    { 137, 2871842842801 },
-    { 139, 2871842842801 },
-    { 149, 26250887023729 },
-    { 151, 26250887023729 },
-    { 157, 112434732901969 },
-    { 163, 112434732901969 },
-    { 167, 112434732901969 },
-    { 173, 178936222537081 },
-    { 179, 178936222537081 },
-    { 181, 696161110209049 },
-    { 191, 696161110209049 },
-    { 193, 2854909648103881 },
-    { 197, 6450045516630769 },
-    { 199, 6450045516630769 },
-    { 211, 11641399247947921 },
-    { 223, 11641399247947921 },
-    { 227, 190621428905186449 },
-    { 229, 196640148121928601 },
-    { 233, 712624335095093521 },
-    { 239, 1773855791877850321 },
-    { 241, 2327687064124474441 },
-    { 251, 6384991873059836689 },
-    { 257, 8019204661305419761 },
-    { 263, 10198100582046287689ull },
-    { 269, 10198100582046287689ull },
-    { 271, 10198100582046287689ull }
+      { 2, to_uint128("17") },
+      { 3, to_uint128("73") },
+      { 5, to_uint128("241") },
+      { 7, to_uint128("1009") },
+     { 11, to_uint128("2641") },
+     { 13, to_uint128("8089") },
+     { 17, to_uint128("18001") },
+     { 19, to_uint128("53881") },
+     { 23, to_uint128("87481") },
+     { 29, to_uint128("117049") },
+     { 31, to_uint128("515761") },
+     { 37, to_uint128("1083289") },
+     { 41, to_uint128("3206641") },
+     { 43, to_uint128("3818929") },
+     { 47, to_uint128("9257329") },
+     { 53, to_uint128("22000801") },
+     { 59, to_uint128("48473881") },
+     { 61, to_uint128("48473881") },
+     { 67, to_uint128("175244281") },
+     { 71, to_uint128("427733329") },
+     { 73, to_uint128("427733329") },
+     { 79, to_uint128("898716289") },
+     { 83, to_uint128("2805544681") },
+     { 89, to_uint128("2805544681") },
+     { 97, to_uint128("2805544681") },
+    { 101, to_uint128("10310263441") },
+    { 103, to_uint128("23616331489") },
+    { 107, to_uint128("85157610409") },
+    { 109, to_uint128("85157610409") },
+    { 113, to_uint128("196265095009") },
+    { 127, to_uint128("196265095009") },
+    { 131, to_uint128("2871842842801") },
+    { 137, to_uint128("2871842842801") },
+    { 139, to_uint128("2871842842801") },
+    { 149, to_uint128("26250887023729") },
+    { 151, to_uint128("26250887023729") },
+    { 157, to_uint128("112434732901969") },
+    { 163, to_uint128("112434732901969") },
+    { 167, to_uint128("112434732901969") },
+    { 173, to_uint128("178936222537081") },
+    { 179, to_uint128("178936222537081") },
+    { 181, to_uint128("696161110209049") },
+    { 191, to_uint128("696161110209049") },
+    { 193, to_uint128("2854909648103881") },
+    { 197, to_uint128("6450045516630769") },
+    { 199, to_uint128("6450045516630769") },
+    { 211, to_uint128("11641399247947921") },
+    { 223, to_uint128("11641399247947921") },
+    { 227, to_uint128("190621428905186449") },
+    { 229, to_uint128("196640148121928601") },
+    { 233, to_uint128("712624335095093521") },
+    { 239, to_uint128("1773855791877850321") },
+    { 241, to_uint128("2327687064124474441") },
+    { 251, to_uint128("6384991873059836689") },
+    { 257, to_uint128("8019204661305419761") },
+    { 263, to_uint128("10198100582046287689") },
+    { 269, to_uint128("10198100582046287689") },
+    { 271, to_uint128("10198100582046287689") },
+    { 277, to_uint128("69848288320900186969") },
+    { 281, to_uint128("208936365799044975961") },
+    { 283, to_uint128("533552663339828203681") },
+    { 293, to_uint128("936664079266714697089") },
+    { 307, to_uint128("936664079266714697089") },
+    { 311, to_uint128("2142202860370269916129") },
+    { 313, to_uint128("2142202860370269916129") },
+    { 317, to_uint128("2142202860370269916129") },
+    { 331, to_uint128("13649154491558298803281") },
+    { 337, to_uint128("34594858801670127778801") },
+    { 347, to_uint128("99492945930479213334049") },
+    { 349, to_uint128("99492945930479213334049") },
+    { 353, to_uint128("295363187400900310880401") },
+    { 359, to_uint128("295363187400900310880401") },
+    { 367, to_uint128("3655334429477057460046489") },
+    { 373, to_uint128("4235025223080597503519329") }
 }};
 
 struct SievingPrime
@@ -254,7 +278,7 @@ bool pseudosquares_prime_test(uint128_t n,
         // Or check all q > p while Lq <= n: q^((n−1)/2) ≡ ±1 mod n
         // This step is missing in Sorenson's paper. Sorenson
         // confirmed it was a bug and suggested this fix.
-        for (std::size_t i = prime_pi[p] + 1; i < pseudosquares.size() && pseudosquares[i].Lp <= n; i++)
+        for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
             fmpz_set_ui(fbase, pseudosquares[i].p);
             fmpz_powm(fres, fbase, fe, fn);
@@ -284,6 +308,16 @@ void initialize(uint128_t stop,
     double log_stop = std::log(stop);
     log_stop = std::max(1.0, log_stop);
     s = delta * log_stop;
+
+    // We have a list of known pseudosquares up to
+    // Lp = L_373 ~ 4.2 * 10^24. Hence, using
+    // delta = n^(1/4.5) and s = delta * log(n)
+    // we can sieve primes up to n:
+    // n / s < Lp
+    // n / (n^(1/4.5) * log(n)) < 4.2 * 10^24
+    // n < 1.24 * 10^34
+    if (stop / s >= pseudosquares.back().Lp)
+        throw std::runtime_error("pseudosquares_prime_sieve: n/s must be < max(Lp)");
 
     // Pick the prime p so that Lp such that n/s < Lp
     for (const auto& pss : pseudosquares)
@@ -320,6 +354,8 @@ void initialize_fmpz(fmpz_t fn,
     fmpz_set_ui(fone, 1);
 }
 
+} // namespace
+
 // Sieve primes inside [start, stop]
 uint64_t pseudosquares_prime_sieve(uint128_t start,
                                    uint128_t stop,
@@ -334,8 +370,13 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     // test, one has to remove perfect powers. Our implementation
     // misses this final step and is hence limited to
     // n <= 6.4 * 10^37 (according to Sorenson's paper).
-    if ((double) stop > 6e37)
-        throw std::runtime_error("stop must be <= 6 * 10^37");
+    //
+    // However, our implementation is also limited by the
+    // formula n / s < max(Lp) and since we only have a list of
+    // pseudosqaures up to max(Lp) = L_373 our implementation
+    // requires n < 1.24 * 10^34, see initialize().
+    if ((double) stop > 1.24 * 1e34)
+        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 6 * 10^37");
 
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p, Lp;
