@@ -1,5 +1,5 @@
 #include "pseudosquares_prime_sieve.hpp"
-#include "calculator.hpp"
+#include "CmdOptions.hpp"
 
 #include <omp.h>
 
@@ -29,30 +29,36 @@ uint64_t get_segment_size(uint128_t stop)
 
 } // namespace
 
+void help(int exit_code)
+{
+    std::cout << "Usage: pseudosquares_prime_sieve [START] STOP" << std::endl
+              << "Sieve the primes inside [START, STOP] (<= 10^34) using" << std::endl
+              << "J. P. Sorenson's Pseudosquares Prime Sieve." << std::endl;
+
+    std::exit(exit_code);
+}
+
 int main(int argc, char** argv)
 {
-    if (argc <= 1)
-    {
-        std::cout << "Usage: pseudosquares_prime_sieve [START] STOP"
-                  << "Sieve the primes inside [START, STOP] (<= 10^34) using"
-                  << "J. P. Sorenson's Pseudosquares Prime Sieve."
-                  << std::endl;
-    }
-
     try
     {
+        CmdOptions opts = parseOptions(argc, argv);
+
+        if (opts.numbers.empty())
+            help(1);
+
         uint128_t start = 0;
         uint128_t stop = 0;
 
-        if (argc <= 2)
+        if (opts.numbers.size() == 1)
         {
-            stop = calculator::eval<uint128_t>(argv[1]);
+            stop = opts.numbers[0];
             std::cout << "Sieving primes inside [0, " << argv[1] << "]" << std::endl;
         }
         else
         {
-            start = calculator::eval<uint128_t>(argv[1]);
-            stop  = calculator::eval<uint128_t>(argv[2]);
+            start = opts.numbers[0];
+            stop  = opts.numbers[1];
             std::cout << "Sieving primes inside [" << argv[1] << ", " << argv[2] << "]" << std::endl;
         }
 
@@ -61,12 +67,18 @@ int main(int argc, char** argv)
 
         if (start <= stop)
         {
-            uint64_t delta = get_segment_size(stop);
-            double s = delta * std::log(std::max(10.0, (double) stop));
-            double t = std::min((stop - start) / s, (double) omp_get_max_threads());
-            int threads = (int) std::max(1.0, t);
-            uint128_t thread_dist = ((stop - start) / threads) + 1;
+            int threads = opts.threads;
 
+            if (threads < 1)
+            {
+                uint64_t delta = get_segment_size(stop);
+                double s = delta * std::log(std::max(10.0, (double) stop));
+                double max_threads = (double) omp_get_max_threads();
+                double t = std::min((stop - start) / s, max_threads);
+                threads = (int) std::max(1.0, t);
+            }
+
+            uint128_t thread_dist = (stop - start) / threads + 1;
             std::cout << "Thread dist: " << thread_dist << std::endl;
             std::cout << "Threads: " << threads << std::endl;
             std::cout << std::endl;
@@ -75,8 +87,9 @@ int main(int argc, char** argv)
             for (int i = 0; i < threads; i++)
             {
                 // Sieve primes inside [low, high]
-                uint64_t low = start + i * thread_dist;
-                uint64_t high = low + thread_dist - 1;
+                uint128_t low = start + i * thread_dist;
+                uint128_t high = low + thread_dist - 1;
+                high = std::min(high, stop);
                 bool verbose = (i == 0);
 
                 count += pseudosquares_prime_sieve(low, high, verbose);
