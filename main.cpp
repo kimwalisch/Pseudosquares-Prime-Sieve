@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     if (argc <= 1)
     {
         std::cout << "Usage: pseudosquares_prime_sieve [START] STOP"
-                  << "Sieve the primes inside [START, STOP] (< 2^64) using"
+                  << "Sieve the primes inside [START, STOP] (<= 10^34) using"
                   << "J. P. Sorenson's Pseudosquares Prime Sieve."
                   << std::endl;
     }
