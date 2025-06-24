@@ -212,7 +212,7 @@ uint64_t get_segment_size(uint128_t stop)
 }
 
 // Set z = x
-void fmpz_set_ui128(fmpz_t z, uint128_t  x, fmpz_t tmp)
+void fmpz_set_ui128(fmpz_t z, uint128_t x, fmpz_t tmp)
 {
     uint64_t lo = (uint64_t)x;
     uint64_t hi = (uint64_t)(x >> 64);
