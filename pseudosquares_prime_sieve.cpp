@@ -390,7 +390,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     initialize(stop, delta, s, p, Lp);
     std::vector<bool> sieve(delta);
 
-    // Flint arbitrary integer variables used
+    // FLINT bignum integer variables used
     // in pseudosquares_prime_test()
     fmpz_t fn, fe, fone, fminus1, fbase, fres, ftmp;
     initialize_fmpz(fn, fe, fone, fminus1, fbase, fres, ftmp);
