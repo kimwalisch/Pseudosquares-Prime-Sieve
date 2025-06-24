@@ -27,7 +27,7 @@ target_link_libraries(pseudosquares_prime_sieve ${FLINT_LIBRARY} OpenMP::OpenMP_
 # Test executable
 enable_testing()
 add_executable(tests tests.cpp pseudosquares_prime_sieve.cpp)
-target_link_libraries(tests ${FLINT_LIBRARY} OpenMP::OpenMP_CXX)
+target_link_libraries(tests ${FLINT_LIBRARY})
 
 # Register test with CTest
 add_test(NAME tests COMMAND tests)
