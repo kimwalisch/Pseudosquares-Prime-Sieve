@@ -4,7 +4,7 @@ This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](htt
 
 ## Prerequisites
 
-You need to have installed a C++ compiler which supports supports 128-bit integers (either GNU GCC or LLVM/Clang), CMake ≥ 3.10 and the FLINT C library. The performance of the Pseudosquares Prime Sieve algorithm depends on fast modular exponentiation, which the FLINT C library provides.
+You need to have installed a C++ compiler which supports 128-bit integers (either GNU GCC or LLVM/Clang), CMake ≥ 3.10 and the FLINT C library. The performance of the Pseudosquares Prime Sieve algorithm depends on fast modular exponentiation, which the FLINT C library provides.
 
 <table>
     <tr>
