@@ -14,13 +14,19 @@
 ///
 
 #include "pseudosquares_prime_sieve.hpp"
+#include "calculator.hpp"
+
+#include <flint/fmpz.h>
 
 #include <iostream>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <stdexcept>
 #include <stdint.h>
+
+namespace {
 
 // First 128 primes
 const std::array<int, 128> primes =
@@ -75,73 +81,94 @@ const std::array<uint8_t, 450> prime_pi =
     84,  84,  84,  84,  85,  85,  85,  85,  86,  86,  86,  86,  86,  86,  87
 };
 
+uint128_t to_uint128(const char* str)
+{
+    return calculator::eval<uint128_t>(str);
+}
+
 struct Pseudosquare
 {
     int p;
-    uint64_t Lp;
+    uint128_t Lp;
 };
 
-// Static pseudosquare table up to p = 271
-const std::array<Pseudosquare, 58> pseudosquares =
+// List of known pseudosquares <= 4.2 * 10^24
+const std::array<Pseudosquare, 74> pseudosquares =
 {{
-    { 2,   17 },
-    { 3,   73 },
-    { 5,   241 },
-    { 7,   1009 },
-    { 11,  2641 },
-    { 13,  8089 },
-    { 17,  18001 },
-    { 19,  53881 },
-    { 23,  87481 },
-    { 29,  117049 },
-    { 31,  515761 },
-    { 37,  1083289 },
-    { 41,  3206641 },
-    { 43,  3818929 },
-    { 47,  9257329 },
-    { 53,  22000801 },
-    { 59,  48473881 },
-    { 61,  48473881 },
-    { 67,  175244281 },
-    { 71,  427733329 },
-    { 73,  427733329 },
-    { 79,  898716289 },
-    { 83,  2805544681 },
-    { 89,  2805544681 },
-    { 97,  2805544681 },
-    { 101, 10310263441 },
-    { 103, 23616331489 },
-    { 107, 85157610409 },
-    { 109, 85157610409 },
-    { 113, 196265095009 },
-    { 127, 196265095009 },
-    { 131, 2871842842801 },
-    { 137, 2871842842801 },
-    { 139, 2871842842801 },
-    { 149, 26250887023729 },
-    { 151, 26250887023729 },
-    { 157, 112434732901969 },
-    { 163, 112434732901969 },
-    { 167, 112434732901969 },
-    { 173, 178936222537081 },
-    { 179, 178936222537081 },
-    { 181, 696161110209049 },
-    { 191, 696161110209049 },
-    { 193, 2854909648103881 },
-    { 197, 6450045516630769 },
-    { 199, 6450045516630769 },
-    { 211, 11641399247947921 },
-    { 223, 11641399247947921 },
-    { 227, 190621428905186449 },
-    { 229, 196640148121928601 },
-    { 233, 712624335095093521 },
-    { 239, 1773855791877850321 },
-    { 241, 2327687064124474441 },
-    { 251, 6384991873059836689 },
-    { 257, 8019204661305419761 },
-    { 263, 10198100582046287689ull },
-    { 269, 10198100582046287689ull },
-    { 271, 10198100582046287689ull }
+      { 2, to_uint128("17") },
+      { 3, to_uint128("73") },
+      { 5, to_uint128("241") },
+      { 7, to_uint128("1009") },
+     { 11, to_uint128("2641") },
+     { 13, to_uint128("8089") },
+     { 17, to_uint128("18001") },
+     { 19, to_uint128("53881") },
+     { 23, to_uint128("87481") },
+     { 29, to_uint128("117049") },
+     { 31, to_uint128("515761") },
+     { 37, to_uint128("1083289") },
+     { 41, to_uint128("3206641") },
+     { 43, to_uint128("3818929") },
+     { 47, to_uint128("9257329") },
+     { 53, to_uint128("22000801") },
+     { 59, to_uint128("48473881") },
+     { 61, to_uint128("48473881") },
+     { 67, to_uint128("175244281") },
+     { 71, to_uint128("427733329") },
+     { 73, to_uint128("427733329") },
+     { 79, to_uint128("898716289") },
+     { 83, to_uint128("2805544681") },
+     { 89, to_uint128("2805544681") },
+     { 97, to_uint128("2805544681") },
+    { 101, to_uint128("10310263441") },
+    { 103, to_uint128("23616331489") },
+    { 107, to_uint128("85157610409") },
+    { 109, to_uint128("85157610409") },
+    { 113, to_uint128("196265095009") },
+    { 127, to_uint128("196265095009") },
+    { 131, to_uint128("2871842842801") },
+    { 137, to_uint128("2871842842801") },
+    { 139, to_uint128("2871842842801") },
+    { 149, to_uint128("26250887023729") },
+    { 151, to_uint128("26250887023729") },
+    { 157, to_uint128("112434732901969") },
+    { 163, to_uint128("112434732901969") },
+    { 167, to_uint128("112434732901969") },
+    { 173, to_uint128("178936222537081") },
+    { 179, to_uint128("178936222537081") },
+    { 181, to_uint128("696161110209049") },
+    { 191, to_uint128("696161110209049") },
+    { 193, to_uint128("2854909648103881") },
+    { 197, to_uint128("6450045516630769") },
+    { 199, to_uint128("6450045516630769") },
+    { 211, to_uint128("11641399247947921") },
+    { 223, to_uint128("11641399247947921") },
+    { 227, to_uint128("190621428905186449") },
+    { 229, to_uint128("196640148121928601") },
+    { 233, to_uint128("712624335095093521") },
+    { 239, to_uint128("1773855791877850321") },
+    { 241, to_uint128("2327687064124474441") },
+    { 251, to_uint128("6384991873059836689") },
+    { 257, to_uint128("8019204661305419761") },
+    { 263, to_uint128("10198100582046287689") },
+    { 269, to_uint128("10198100582046287689") },
+    { 271, to_uint128("10198100582046287689") },
+    { 277, to_uint128("69848288320900186969") },
+    { 281, to_uint128("208936365799044975961") },
+    { 283, to_uint128("533552663339828203681") },
+    { 293, to_uint128("936664079266714697089") },
+    { 307, to_uint128("936664079266714697089") },
+    { 311, to_uint128("2142202860370269916129") },
+    { 313, to_uint128("2142202860370269916129") },
+    { 317, to_uint128("2142202860370269916129") },
+    { 331, to_uint128("13649154491558298803281") },
+    { 337, to_uint128("34594858801670127778801") },
+    { 347, to_uint128("99492945930479213334049") },
+    { 349, to_uint128("99492945930479213334049") },
+    { 353, to_uint128("295363187400900310880401") },
+    { 359, to_uint128("295363187400900310880401") },
+    { 367, to_uint128("3655334429477057460046489") },
+    { 373, to_uint128("4235025223080597503519329") }
 }};
 
 struct SievingPrime
@@ -176,7 +203,7 @@ std::vector<SievingPrime> get_sieving_primes(uint64_t n)
 // segment size improves performance. Hence, we use a
 // segment size of O(n^(1/4.5)).
 //
-uint64_t get_segment_size(uint64_t stop)
+uint64_t get_segment_size(uint128_t stop)
 {
     uint64_t segment_size = 1 << 14;
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
@@ -184,82 +211,94 @@ uint64_t get_segment_size(uint64_t stop)
     return segment_size;
 }
 
-uint64_t mulmod(uint64_t a, uint64_t b, uint64_t m)
+// Set z = x
+void fmpz_set_ui128(fmpz_t z, uint128_t  x, fmpz_t tmp)
 {
-    __uint128_t r = __uint128_t(a) * b;
-    return (uint64_t)(r % m);
-}
+    uint64_t lo = (uint64_t)x;
+    uint64_t hi = (uint64_t)(x >> 64);
 
-// Modular exponentiation
-uint64_t modpow(uint64_t a, uint64_t e, uint64_t m)
-{
-    uint64_t res = 1;
-    a %= m;
-    while (e) {
-        if (e & 1) res = mulmod(res, a, m);
-        a = mulmod(a, a, m);
-        e >>= 1;
+    if (hi == 0)
+        fmpz_set_ui(z, lo);
+    else
+    {
+        // compute tmp = hi << 64
+        fmpz_set_ui(tmp, hi);
+        fmpz_mul_2exp(tmp, tmp, 64);
+        // z = lo + tmp
+        fmpz_set_ui(z, lo);
+        fmpz_add(z, z, tmp);
     }
-    return res;
 }
 
 // Sorenson's Pseudosquares Prime Test
-bool pseudosquares_prime_test(uint64_t n, int p)
+bool pseudosquares_prime_test(uint128_t n,
+                              int p,
+                              fmpz_t fn,
+                              fmpz_t fe,
+                              fmpz_t fone,
+                              fmpz_t fminus1,
+                              fmpz_t fbase,
+                              fmpz_t fres,
+                              fmpz_t ftmp)
 {
-    uint64_t exponent = (n - 1) / 2;
-    uint64_t count_res_minus_1 = 0;
+    fmpz_set_ui128(fn, n, ftmp);
+    fmpz_set_ui128(fe, (n - 1) >> 1, ftmp);
+    fmpz_sub_ui(fminus1, fn, 1);
+
+    int count_minus1 = 0;
 
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
-    if (n % 8 == 5 && modpow(2, exponent, n) != n - 1)
-        return false;
-
-    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
-    for (uint64_t i = 0; primes[i] <= p; i++)
+    if ((n & 7) == 5)
     {
-        uint64_t res = modpow(primes[i], exponent, n);
-
-        if (res != 1 && res != n - 1)
-            return false; // Violates ±1 requirement
-        if (res == n - 1)
-            count_res_minus_1++;
+        fmpz_set_ui(fbase, 2);
+        fmpz_powm(fres, fbase, fe, fn);
+        if (fmpz_cmp(fres, fminus1) != 0)
+            return false;
     }
 
-    // Condition (4) for n ≡ 1 mod 8: must have at least one res ≡ -1
-    if (n % 8 == 1)
+    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
+    for (std::size_t i = 0; primes[i] <= p; i++)
     {
-        if (count_res_minus_1 > 0)
-            return true;
-        else
-        {
-            // check all q > p: q^((n−1)/2) ≡ ±1 mod n
-            //     while Lq <= n    
-            //
-            // This case is missing in Sorenson's 
-            // "The Pseudosquares Prime Sieve" paper.
-            // Sorenson acknowledged the bug and shared
-            // this fix in an email.
-            for (uint64_t i = prime_pi[p] + 1; i < pseudosquares.size() && pseudosquares[i].Lp <= n; i++)
-            {
-                uint64_t res = modpow(pseudosquares[i].p, exponent, n);
+        fmpz_set_ui(fbase, primes[i]);
+        fmpz_powm(fres, fbase, fe, fn);
 
-                if (res == n - 1)
-                    return true; // res ≡ -1 ⇒ prime
-                if (res != 1)
-                    return false; // composite
-            }
+        if (fmpz_cmp(fres, fone) != 0 && fmpz_cmp(fres, fminus1) != 0)
+            return false;
+        if (fmpz_cmp(fres, fminus1) == 0)
+            count_minus1++;
+    }
+
+    // Condition (4) for n ≡ 1 mod 8:
+    if ((n & 7) == 1)
+    {
+        // Must either have at least one res ≡ -1
+        if (count_minus1 > 0)
+            return true;
+
+        // Or check all q > p while Lq <= n: q^((n−1)/2) ≡ ±1 mod n
+        // This step is missing in Sorenson's paper. Sorenson
+        // confirmed it was a bug and suggested this fix.
+        for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
+        {
+            fmpz_set_ui(fbase, pseudosquares[i].p);
+            fmpz_powm(fres, fbase, fe, fn);
+
+            if (fmpz_cmp(fres, fminus1) == 0)
+                return true;
+            if (fmpz_cmp(fres, fone) != 0)
+                return false;
         }
     }
 
-    // Passed all tests — n is prime or a prime power
     return true;
 }
 
-void initialize(uint64_t stop,
+void initialize(uint128_t stop,
                 uint64_t& delta,
                 uint64_t& s,
                 uint64_t& p,
                 uint64_t& Lp,
-                bool is_print)
+                bool verbose)
 {
     // In Sorenson's paper the segment size is named ∆,
     // with ∆ = s / log(n). s is the upper bound for
@@ -270,6 +309,16 @@ void initialize(uint64_t stop,
     log_stop = std::max(1.0, log_stop);
     s = delta * log_stop;
 
+    // We have a list of known pseudosquares up to
+    // max(Lp) = L_373 ~ 4.2 * 10^24. Hence, using
+    // delta = n^(1/4.5) and s = delta * log(n)
+    // we can sieve primes up to n:
+    // n / s < Lp
+    // n / (n^(1/4.5) * log(n)) < 4.2 * 10^24
+    // n < 1.24 * 10^34
+    if (stop / s >= pseudosquares.back().Lp)
+        throw std::runtime_error("pseudosquares_prime_sieve: n/s must be < max(Lp)");
+
     // Pick the prime p so that Lp such that n/s < Lp
     for (const auto& pss : pseudosquares)
     {
@@ -279,7 +328,7 @@ void initialize(uint64_t stop,
             break;
     }
 
-    if (is_print)
+    if (verbose)
     {
         std::cout << "Sieve size: " << delta << " bytes" << std::endl;
         std::cout << "s: " << s << " (max sieving prime)" << std::endl;
@@ -288,36 +337,70 @@ void initialize(uint64_t stop,
     }
 }
 
-// Sieve primes inside [start, stop]
-uint64_t pseudosquares_prime_sieve(uint64_t start,
-                                   uint64_t stop,
-                                   bool is_print)
+void initialize_fmpz(fmpz_t fn,
+                     fmpz_t fe,
+                     fmpz_t fone,
+                     fmpz_t fminus1,
+                     fmpz_t fbase,
+                     fmpz_t fres,
+                     fmpz_t ftmp)
 {
-    if (is_print)
-        std::cout << "Sieving primes inside [" << start << ", " << stop << "]" << std::endl;
+    fmpz_init(fbase);
+    fmpz_init(fres);
+    fmpz_init(fminus1);
+    fmpz_init(ftmp);
+    fmpz_init2(fn, 2);
+    fmpz_init2(fe, 2);
+    fmpz_set_ui(fone, 1);
+}
 
+} // namespace
+
+// Sieve primes inside [start, stop]
+uint64_t pseudosquares_prime_sieve(uint128_t start,
+                                   uint128_t stop,
+                                   bool print_primes,
+                                   bool verbose)
+{
     if (start < 2)
         start = 2;
     if (start > stop)
         return 0;
 
+    // After having run sieving and the pseudosquares prime
+    // test, one has to remove perfect powers. Our implementation
+    // misses this final step and is hence limited to
+    // n <= 6.4 * 10^37 (according to Sorenson's paper).
+    //
+    // However, our implementation is also limited by the
+    // formula n / s < max(Lp) and since we only have a list of
+    // pseudosqaures up to max(Lp) = L_373 our implementation
+    // requires n < 1.24 * 10^34, see initialize().
+    if ((double) stop > 1.24 * 1e34)
+        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 6 * 10^37");
+
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p, Lp;
-    initialize(stop, delta, s, p, Lp, is_print);
+    initialize(stop, delta, s, p, Lp, verbose);
     std::vector<bool> sieve(delta);
+
+    // FLINT bignum integer variables used
+    // in pseudosquares_prime_test()
+    fmpz_t fn, fe, fone, fminus1, fbase, fres, ftmp;
+    initialize_fmpz(fn, fe, fone, fminus1, fbase, fres, ftmp);
 
     uint64_t count = 0;
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
     std::vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
 
-    for (uint64_t low = start; low <= stop; low += sieve.size())
+    for (uint128_t low = start; low <= stop; low += sieve.size())
     {
         // Sieve current segment [low, high]
-        uint64_t high = low + sieve.size() - 1;
+        uint128_t high = low + sieve.size() - 1;
         high = std::min(high, stop);
         uint64_t sqrt_high = (uint64_t) std::sqrt(high);
-        uint64_t max_i = (high - low) + 1;
+        uint64_t max_i = uint64_t(high - low) + 1;
         max_sieving_prime = std::min(s, sqrt_high);
         std::fill(sieve.begin(), sieve.end(), true);
 
@@ -331,11 +414,12 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
                 break;
             if (sp.i == -1)
             {
-                uint64_t q = low / prime;
-                uint64_t n = q * prime;
+                uint128_t q = low / prime;
+                uint128_t n = q * prime;
+                uint128_t pp = uint128_t(prime) * prime;
                 n += prime * (n < low);
-                n = std::max(n, prime * prime);
-                i = n - low;
+                n = std::max(n, pp);
+                i = uint64_t(n - low);
             }
 
             // Cross-off the multiples of prime
@@ -346,17 +430,33 @@ uint64_t pseudosquares_prime_sieve(uint64_t start,
         }
 
         // Count primes inside [low, high]
-        for (uint64_t n = low; n <= std::min(high, stop); n++)
+        for (uint128_t n = low; n <= std::min(high, stop); n++)
         {
             if (sieve[n - low])
             {
                 if (max_sieving_prime >= sqrt_high)
+                {
                     count++;
-                else if (pseudosquares_prime_test(n, p))
+                    if (print_primes)
+                        std::cout << n << "\n";
+                }
+                else if (pseudosquares_prime_test(n, p, fn, fe, fone, fminus1, fbase, fres, ftmp))
+                {
                     count++;
+                    if (print_primes)
+                        std::cout << n << "\n";
+                }
             }
         }
     }
+
+    fmpz_clear(fn);
+    fmpz_clear(fe);
+    fmpz_clear(fone);
+    fmpz_clear(fminus1);
+    fmpz_clear(fbase);
+    fmpz_clear(fres);
+    fmpz_clear(ftmp);
 
     return count;
 }
