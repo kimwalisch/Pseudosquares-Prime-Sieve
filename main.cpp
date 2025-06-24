@@ -43,18 +43,12 @@ void help(int exit_code)
 
 namespace {
 
-// In Sorenson's paper the semgent size is named ∆,
-// with ∆ = s / log(n). We also have ∆ = Θ(π(p) log n).
-// Sorenson's paper also mentions that using a larger
-// segment size improves performance. Hence, we use a
-// segment size of O(n^(1/4.5)).
-//
-uint64_t get_segment_size(uint128_t stop)
+double get_min_thread_dist(uint128_t stop)
 {
-    uint64_t segment_size = 1 << 14;
-    uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
-    segment_size = std::max(segment_size, root4_stop);
-    return segment_size;
+    double min_thread_dist = 1e4;
+    double root5_stop = std::pow(stop, 1.0 / 5.0);
+    min_thread_dist = std::max(min_thread_dist, root5_stop);
+    return min_thread_dist;
 }
 
 } // namespace
@@ -94,13 +88,16 @@ int main(int argc, char** argv)
         if (start <= stop)
         {
             int threads = opts.threads;
+            int max_threads = std::thread::hardware_concurrency();
+            max_threads = std::max(1, max_threads);
 
-            if (threads < 1)
+            if (threads > 1)
+                threads = std::min(threads, max_threads);
+            else
             {
-                uint64_t delta = get_segment_size(stop);
-                double s = delta * std::log(std::max(10.0, (double) stop));
-                double max_threads = std::thread::hardware_concurrency();
-                double t = std::min((stop - start) / s, max_threads);
+                double min_thread_dist = get_min_thread_dist(stop);
+                double t = (stop - start) / min_thread_dist;
+                t = std::min(t, (double) max_threads);
                 threads = (int) std::max(1.0, t);
             }
 
