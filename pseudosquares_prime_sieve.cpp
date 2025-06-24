@@ -372,7 +372,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     // pseudosqaures up to max(Lp) = L_373 our implementation
     // requires n < 1.24 * 10^34, see initialize().
     if ((double) stop > 1.24 * 1e34)
-        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 6 * 10^37");
+        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.24 * 10^34");
 
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p;
