@@ -16,6 +16,7 @@
 #include "pseudosquares_prime_sieve.hpp"
 #include "calculator.hpp"
 
+#include <primesieve.hpp>
 #include <gmp.h>
 
 #include <iostream>
@@ -274,19 +275,20 @@ struct SievingPrime
 // Generate sieving primes <= n
 std::vector<SievingPrime> get_sieving_primes(uint64_t n)
 {
-    std::vector<bool> sieve(n + 1, true);
+    // pi(x) <= x / (log(x) - 1.1) + 5, for x >= 4.
+    // Pierre Dusart, https://arxiv.org/abs/1002.0442 eq. 6.6.
+    double x = (double) n;
+    x = std::max(100.0, x);
+    double pix = x / (std::log(x) - 1.1) + 5;
 
-    for (uint64_t i = 3; i * i <= n; i += 2)
-        if (sieve[i])
-            for (uint64_t j = i * i; j <= n; j += i * 2)
-                sieve[j] = false;
-
+    std::size_t size = (std::size_t) pix;
     std::vector<SievingPrime> sieving_primes;
-    sieving_primes.push_back({2, -1});
+    sieving_primes.reserve(size);
+    primesieve::iterator it(2, n);
+    uint64_t prime;
 
-    for (uint64_t i = 3; i <= n; i += 2)
-        if (sieve[i])
-            sieving_primes.push_back({i, -1});
+    while ((prime = it.next_prime()) <= n)
+        sieving_primes.push_back({prime, -1});
 
     return sieving_primes;
 }
