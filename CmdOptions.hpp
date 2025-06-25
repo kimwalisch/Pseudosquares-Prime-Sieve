@@ -24,15 +24,18 @@
 #include <vector>
 
 void help(int exit_code);
+void version();
 
 namespace {
 
 enum OptionID
 {
+  OPTION_DISTANCE,
   OPTION_HELP,
   OPTION_NUMBER,
   OPTION_PRINT,
-  OPTION_THREADS
+  OPTION_THREADS,
+  OPTION_VERSION
 };
 
 /// Command-line option
@@ -66,6 +69,7 @@ struct CmdOptions
   int option = -1;
   int threads = 0;
   bool print_primes = false;
+  void optionDistance(Option& opt);
 };
 
 /// Some command-line options require an additional parameter.
@@ -214,6 +218,27 @@ Option parseOption(int argc,
   return opt;
 }
 
+void CmdOptions::optionDistance(Option& opt)
+{
+  uint128_t start = 0;
+  uint128_t val = opt.getValue<uint128_t>();
+
+  if (!numbers.empty())
+    start = numbers.front();
+
+  numbers.push_back(start + val);
+
+  if (opt.val.find_first_of("0123456789") != 0)
+    numbers_str.push_back(to_string(numbers.back()));
+  else
+  {
+    if (numbers_str.empty())
+      numbers_str.push_back(opt.val);
+    else
+      numbers_str.push_back(numbers_str.back() + "+" + opt.val);
+  }
+}
+
 } // namespace
 
 CmdOptions parseOptions(int argc, char* argv[])
@@ -225,13 +250,17 @@ CmdOptions parseOptions(int argc, char* argv[])
   /// Command-line options
   const std::map<std::string, std::pair<OptionID, IsParam>> optionMap =
   {
+    { "-d",                 std::make_pair(OPTION_DISTANCE, REQUIRED_PARAM) },
+    { "--dist",             std::make_pair(OPTION_DISTANCE, REQUIRED_PARAM) },
     { "-h",                 std::make_pair(OPTION_HELP, NO_PARAM) },
     { "--help",             std::make_pair(OPTION_HELP, NO_PARAM) },
     { "--number",           std::make_pair(OPTION_NUMBER, REQUIRED_PARAM) },
     { "-p",                 std::make_pair(OPTION_PRINT, OPTIONAL_PARAM) },
     { "--print",            std::make_pair(OPTION_PRINT, OPTIONAL_PARAM) },
     { "-t",                 std::make_pair(OPTION_THREADS, REQUIRED_PARAM) },
-    { "--threads",          std::make_pair(OPTION_THREADS, REQUIRED_PARAM) }
+    { "--threads",          std::make_pair(OPTION_THREADS, REQUIRED_PARAM) },
+    { "-v",                 std::make_pair(OPTION_VERSION, NO_PARAM) },
+    { "--version",          std::make_pair(OPTION_VERSION, NO_PARAM) }
   };
 
   CmdOptions opts;
@@ -243,11 +272,13 @@ CmdOptions parseOptions(int argc, char* argv[])
 
     switch (optionID)
     {
-      case OPTION_NUMBER:  opts.numbers.push_back(opt.getValue<uint128_t>());
-                           opts.numbers_str.push_back(opt.val); break;
-      case OPTION_PRINT:   opts.print_primes = true; break;
-      case OPTION_THREADS: opts.threads = opt.getValue<int>(); break;
-      case OPTION_HELP:    help(0); break;
+      case OPTION_DISTANCE: opts.optionDistance(opt); break;
+      case OPTION_NUMBER:   opts.numbers.push_back(opt.getValue<uint128_t>());
+                            opts.numbers_str.push_back(opt.val); break;
+      case OPTION_PRINT:    opts.print_primes = true; break;
+      case OPTION_THREADS:  opts.threads = opt.getValue<int>(); break;
+      case OPTION_HELP:     help(0); break;
+      case OPTION_VERSION:  version(); break;
     }
   }
 

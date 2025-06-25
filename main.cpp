@@ -32,13 +32,25 @@ void help(int exit_code)
         "J. P. Sorenson's Pseudosquares Prime Sieve.\n"
         "\n"
         "Options:\n"
+        "  -d, --dist=DIST    Sieve the interval [START, START + DIST].\n"
         "  -h, --help         Print this help menu.\n"
         "  -p, --print        Print primes to the standard output.\n"
         "  -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
-        "                     Default setting: use all available CPU cores.\n";
+        "                     Default setting: use all available CPU cores.\n"
+        "  -v, --version      Print version and license information.\n";
 
     std::cout << help_menu << std::endl;
     std::exit(exit_code);
+}
+
+void version()
+{
+  std::cout << "pseudosquares_prime_sieve 0.1";
+  std::cout << ", <https://github.com/kimwalisch/Pseudosquares-Prime-Sieve>" << std::endl;
+  std::cout << "Copyright (C) 2025 Kim Walisch" << std::endl;
+  std::cout << "BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>" << std::endl;
+
+  std::exit(0);
 }
 
 namespace {
