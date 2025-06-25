@@ -1,5 +1,7 @@
 # Pseudosquares Prime Sieve
 
+[![Build status](https://github.com/kimwalisch/Pseudosquares-Prime-Sieve/actions/workflows/ci.yml/badge.svg)](https://github.com/kimwalisch/Pseudosquares-Prime-Sieve/actions/workflows/ci.yml)
+
 This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1095&context=facsch_papers) algorithm, which is one of the few prime sieving algorithms that is well suited for generating primes > $2^{64}$. The Pseudosquares Prime Sieve uses much less memory than most other prime sieving algorithms: it has a conjectured runtime complexity of $O(n\cdot\log{n})$ operations and uses $O(\log^2{n})$ space.
 
 ## Prerequisites
