@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+bindir=@CMAKE_INSTALL_FULL_BINDIR@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+
+Name: primesieve
+Description: Fast C/C++ prime number generator
+Version: @PRIMESIEVE_VERSION@
+Libs: -L${libdir} -lprimesieve
+Libs.private: @CMAKE_THREAD_LIBS_INIT@
+Cflags: -I${includedir}
