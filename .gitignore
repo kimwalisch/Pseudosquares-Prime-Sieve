@@ -11,6 +11,7 @@
 *.pc
 *.dSYM
 /pseudosquares_prime_sieve*
+!/pseudosquares_prime_sieve.pc.in
 /tests*
 CMakeCache.txt
 CMakeFiles
