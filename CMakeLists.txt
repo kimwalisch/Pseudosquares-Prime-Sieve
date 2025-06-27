@@ -65,7 +65,7 @@ find_package(Threads REQUIRED QUIET)
 ######################################################################
 
 # Source files
-set(SRC_FILES main.cpp pseudosquares_prime_sieve.cpp)
+set(SRC_FILES src/main.cpp src/pseudosquares_prime_sieve.cpp)
 
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
@@ -73,7 +73,7 @@ target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::pri
 
 # Test executable
 enable_testing()
-add_executable(tests tests.cpp pseudosquares_prime_sieve.cpp)
+add_executable(tests src/tests.cpp src/pseudosquares_prime_sieve.cpp)
 target_link_libraries(tests primesieve::primesieve hurchalla_modular_arithmetic)
 
 # Register test with CTest
