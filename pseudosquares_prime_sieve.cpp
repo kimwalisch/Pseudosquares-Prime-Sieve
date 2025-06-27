@@ -439,7 +439,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
 
         for (uint128_t n = low + (~low & 1); n <= high; n += 2)
         {
-            // sieve[i]=true is a potential prime
+            // sieve[n]=true is a potential prime
             if (sieve[n - low])
             {
                 if (max_sieving_prime >= sqrt_high)
