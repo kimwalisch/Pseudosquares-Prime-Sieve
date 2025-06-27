@@ -4,30 +4,32 @@
 
 This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1095&context=facsch_papers) algorithm, which is one of the few prime sieving algorithms that is well suited for generating primes > $2^{64}$. The Pseudosquares Prime Sieve is a deterministic primality algorithm that outputs only proven primes, without relying on probabilistic assumptions. The Pseudosquares Prime Sieve uses much less memory than most other prime sieving algorithms: it has a conjectured runtime complexity of $O(n\cdot\log{n})$ operations and uses $O(\log^2{n})$ space.
 
+The performance of the Pseudosquares Prime Sieve algorithm relies heavily on fast modular exponentiation of 128-bit integers, for which we are using the [hurchalla/modular_arithmetic](https://github.com/hurchalla/modular_arithmetic) C++ library. For fast generation of sieving primes we are using the [primesieve C/C++](https://github.com/kimwalisch/primesieve) library. Both libraries have been vendored (included directly) into the Pseudosquares-Prime-Sieve repository to simplify building the project and eliminate any external dependencies!
+
 ## Prerequisites
 
-You need to have installed a C++ compiler which supports 128-bit integers (either GNU GCC or LLVM/Clang), CMake ≥ 3.10 and the GMP C library. The performance of the Pseudosquares Prime Sieve algorithm depends on fast modular exponentiation, which the GMP C library provides.
+You need to have installed a C++ compiler which supports 128-bit integers (either GNU GCC or LLVM/Clang) and CMake ≥ 3.10.
 
 <table>
     <tr>
         <td><b>Arch Linux:</b></td>
-        <td><code>sudo pacman -S gcc cmake gmp</code></td>
+        <td><code>sudo pacman -S gcc cmake</code></td>
     </tr>
     <tr>
         <td><b>Debian/Ubuntu:</b></td>
-        <td><code>sudo apt install g++ cmake libgmp-dev</code></td>
+        <td><code>sudo apt install g++ cmake</code></td>
     </tr>
     <tr>
         <td><b>Fedora:</b></td>
-        <td><code>sudo dnf install gcc-c++ cmake gmp-devel</code></td>
+        <td><code>sudo dnf install gcc-c++ cmake</code></td>
     </tr>
     <tr>
         <td><b>macOS:</b></td>
-        <td><code>brew install cmake gmp</code></td>
+        <td><code>brew install cmake</code></td>
     </tr>
     <tr>
         <td><b>openSUSE:</b></td>
-        <td><code>sudo zypper install gcc-c++ cmake gmp-devel</code></td>
+        <td><code>sudo zypper install gcc-c++ cmake</code></td>
     </tr>
 </table>
 

@@ -20,10 +20,6 @@ jobs:
       CXX: g++
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-            sudo apt update
-            sudo apt install libgmp-dev
       - name: Build pseudosquares_prime_sieve
         run: |
             cmake . -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror"
@@ -42,10 +38,6 @@ jobs:
       CXX: clang++
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-            sudo apt update
-            sudo apt install libgmp-dev
       - name: Build pseudosquares_prime_sieve
         run: |
             cmake . -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror"
@@ -68,7 +60,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           update: true
-          install: base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-gmp
+          install: base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake
       - name: Build pseudosquares_prime_sieve
         run: |
             cmake . -G "Unix Makefiles" -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror"
@@ -83,10 +75,6 @@ jobs:
       CXX: g++
     steps:
       - uses: actions/checkout@v4
-      - name: Install valgrind
-        run: |
-            sudo apt update
-            sudo apt install libgmp-dev
       - name: Build pseudosquares_prime_sieve
         run: |
             cmake . -DBUILD_TESTS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
@@ -108,7 +96,7 @@ jobs:
       - name: Install valgrind
         run: |
             sudo apt update
-            sudo apt install valgrind libgmp-dev
+            sudo apt install valgrind
       - name: Build pseudosquares_prime_sieve
         run: |
             cmake . -DBUILD_TESTS=ON -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror -g" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror -g"
