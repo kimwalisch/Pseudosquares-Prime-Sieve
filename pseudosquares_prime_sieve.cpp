@@ -346,7 +346,7 @@ void initialize(uint128_t stop,
 
     if (verbose)
     {
-        std::cout << "Sieve size: " << delta / 16 << " bytes" << std::endl;
+        std::cout << "Sieve size: " << delta / Sieve::numbers_per_byte() << " bytes" << std::endl;
         std::cout << "log(n): " << log_stop << std::endl;
         std::cout << "delta: " << delta << std::endl;
         std::cout << "s: " << s << " (max sieving prime)" << std::endl;
