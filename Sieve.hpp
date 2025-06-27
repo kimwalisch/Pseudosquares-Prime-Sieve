@@ -1,12 +1,8 @@
 ///
 /// @file  Sieve.hpp
-/// @brief This file contains lookup tables that are
-///        needed to implement a prime sieving algorithm where each
-///        bit corresponds to an integer that is not divisible by 2,
-///        3 and 5. The 8 bits of each byte correspond to the offsets
-///        { 1, 7, 11, 13, 17, 19, 23, 29 }. Since the sieve array
-///        uses the uint64_t data type, one sieve array element
-///        (8 bytes) corresponds to an interval of size 30 * 8 = 240.
+/// @brief This is a bit sieve array where each bit corresponds to an
+///        odd integer. Hence, each byte (8 bits) corresponds to an
+///        interval of size 16.
 ///
 /// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
 ///
@@ -42,9 +38,9 @@ public:
         std::fill(sieve_.begin(), sieve_.end(), 0xff);
     }
 
-    ALWAYS_INLINE bool operator[](std::size_t i) const
+    ALWAYS_INLINE std::size_t operator[](std::size_t i) const
     {
-        return (sieve_[i >> 4] & is_bit_[i & 15]) != 0;
+        return sieve_[i >> 4] & is_bit_[i & 15];
     }
 
     ALWAYS_INLINE void unset_bit(std::size_t i)
