@@ -20,11 +20,13 @@
 
 #include <primesieve.hpp>
 #include <hurchalla/modular_arithmetic/modular_pow.h>
+#include <hurchalla/montgomery_arithmetic/MontgomeryForm.h>
 
 #include <iostream>
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <stdexcept>
 #include <stdint.h>
 
@@ -173,6 +175,35 @@ const std::array<Pseudosquare, 74> pseudosquares =
     { 373, to_uint128("4235025223080597503519329") }
 }};
 
+/// We use the hurchalla/modular_arithmetic
+/// library for doing modular exponentiations
+/// of 64-bit and 128-bit integers.
+///
+uint128_t modpow(uint64_t base, uint128_t exponent, uint128_t modulus)
+{
+    // Montgomery modular exponentiation
+    // requires that the modulus is odd.
+    ASSERT(modulus % 2 == 1);
+    ASSERT(exponent < modulus);
+
+    if (modulus <= std::numeric_limits<uint64_t>::max())
+    {
+        hurchalla::MontgomeryForm<uint64_t> mf(modulus);
+        auto base_montval = mf.convertIn(base);
+        auto res_montval = mf.pow(base_montval, exponent);
+        uint64_t res = mf.convertOut(res_montval);
+        return res;
+    }
+    else
+    {
+        hurchalla::MontgomeryForm<uint128_t> mf(modulus);
+        auto base_montval = mf.convertIn(base);
+        auto res_montval = mf.pow(base_montval, exponent);
+        uint128_t res = mf.convertOut(res_montval);
+        return res;
+    }
+}
+
 // Sorenson's Pseudosquares Prime Test
 bool pseudosquares_prime_test(uint128_t n, int p)
 {
@@ -184,8 +215,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
     if ((n & 7) == 5)
     {
-        uint128_t base = 2;
-        uint128_t res = hurchalla::modular_pow(base, e, n);
+        uint128_t res = modpow(2, e, n);
         if (res != minus1)
             return false;
     }
@@ -193,8 +223,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
     for (std::size_t i = 0; primes[i] <= p; i++)
     {
-        uint128_t base = primes[i];
-        uint128_t res = hurchalla::modular_pow(base, e, n);
+        uint128_t res = modpow(primes[i], e, n);
 
         if (res != one && res != minus1)
             return false;
@@ -214,8 +243,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
-            uint128_t base = pseudosquares[i].p;
-            uint128_t res = hurchalla::modular_pow(base, e, n);
+            uint128_t res = modpow(pseudosquares[i].p, e, n);
 
             if (res == minus1)
                 return true;

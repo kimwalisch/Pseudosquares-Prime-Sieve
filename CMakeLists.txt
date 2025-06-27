@@ -58,26 +58,9 @@ endif()
 
 add_subdirectory(lib/modular_arithmetic)
 
-# Threads & GNU GMP library ##########################################
+# C++ Threads library ################################################
 
 find_package(Threads REQUIRED QUIET)
-
-# On macOS we assume the default package manager is homebrew
-if(APPLE AND NOT GMP_INCLUDE_DIR)
-    set(GMP_INCLUDE_DIR "/opt/homebrew/include")
-endif()
-
-if(GMP_INCLUDE_DIR)
-    include_directories("${GMP_INCLUDE_DIR}")
-endif()
-
-# Find GMP C library
-find_path(GMP_HEADER gmp.h)
-find_library(GMP_LIBRARY NAMES gmp)
-
-if(NOT GMP_HEADER OR NOT GMP_LIBRARY)
-    message(FATAL_ERROR "GMP C library not found. Please install the GMP C library.")
-endif()
 
 ######################################################################
 
@@ -86,12 +69,12 @@ set(SRC_FILES main.cpp pseudosquares_prime_sieve.cpp)
 
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
-target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::primesieve hurchalla_modular_arithmetic ${GMP_LIBRARY})
+target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::primesieve hurchalla_modular_arithmetic)
 
 # Test executable
 enable_testing()
 add_executable(tests tests.cpp pseudosquares_prime_sieve.cpp)
-target_link_libraries(tests primesieve::primesieve hurchalla_modular_arithmetic ${GMP_LIBRARY})
+target_link_libraries(tests primesieve::primesieve hurchalla_modular_arithmetic)
 
 # Register test with CTest
 add_test(NAME tests COMMAND tests)
