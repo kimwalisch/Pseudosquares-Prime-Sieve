@@ -4,8 +4,6 @@
 
 This is a C++ implementation of J. P. Sorenson's [Pseudosquares Prime Sieve](https://digitalcommons.butler.edu/cgi/viewcontent.cgi?article=1095&context=facsch_papers) algorithm, which is one of the few prime sieving algorithms that is well suited for generating primes > $2^{64}$. The Pseudosquares Prime Sieve is a deterministic primality algorithm that outputs only proven primes, without relying on probabilistic assumptions. The Pseudosquares Prime Sieve uses much less memory than most other prime sieving algorithms: it has a conjectured runtime complexity of $O(n\cdot\log{n})$ operations and uses $O(\log^2{n})$ space.
 
-Can you improve this section from the README.md of my C++ project?
-
 The performance of the Pseudosquares Prime Sieve algorithm relies heavily on fast modular exponentiation of 128-bit integers, for which we are using the [hurchalla/modular_arithmetic](https://github.com/hurchalla/modular_arithmetic) C++ library. For fast generation of sieving primes we are using the [primesieve C/C++](https://github.com/kimwalisch/primesieve) library. Both libraries have been vendored (included directly) into the Pseudosquares-Prime-Sieve repository to simplify building the project and eliminate any external dependencies!
 
 ## Prerequisites
