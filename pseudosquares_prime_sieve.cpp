@@ -360,11 +360,6 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
                                    bool print_primes,
                                    bool verbose)
 {
-    if (start < 2)
-        start = 2;
-    if (start > stop)
-        return 0;
-
     // After having run sieving and the pseudosquares prime
     // test, one has to remove perfect powers. Our implementation
     // misses this final step and is hence limited to
@@ -377,13 +372,28 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     if ((double) stop > 1.24 * 1e34)
         throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.24 * 10^34");
 
+    uint64_t count = 0;
+
+    if (start < 2)
+        start = 2;
+    if (start > stop)
+        return 0;
+    if (start <= 2)
+    {
+        count++;
+        if (print_primes)
+            std::cout << 2 << "\n";
+        start = 3;
+        if (start > stop)
+            return count;
+    }
+
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p;
     initialize(stop, delta, s, p, verbose);
     Sieve sieve(delta);
 
     Mpz z;
-    uint64_t count = 0;
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
     Vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
