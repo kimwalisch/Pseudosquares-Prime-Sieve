@@ -15,6 +15,11 @@ if(NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
+# Enable assertions in Debug mode only
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND PRIMECOUNT_COMPILE_DEFINITIONS "ENABLE_ASSERT")
+endif()
+
 # libprimesieve ######################################################
 
 # By default the libprimesieve dependency is built from source
