@@ -31,7 +31,7 @@
 namespace {
 
 // First 128 primes
-const std::array<int, 128> primes =
+const Array<int, 128> primes =
 {
       2,   3,   5,   7,  11,  13,  17,  19,  23,  29,
      31,  37,  41,  43,  47,  53,  59,  61,  67,  71,
@@ -49,7 +49,7 @@ const std::array<int, 128> primes =
 };
 
 /// Number of primes < 450
-const std::array<uint8_t, 450> prime_pi =
+const Array<uint8_t, 450> prime_pi =
 {
      0,   0,   1,   2,   2,   3,   3,   4,   4,   4,   4,   5,   5,   6,   6,
      6,   6,   7,   7,   8,   8,   8,   8,   9,   9,   9,   9,   9,   9,  10,
