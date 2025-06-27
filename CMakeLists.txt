@@ -54,6 +54,10 @@ else()
     endif()
 endif()
 
+# Add hurchalla/modular_arithmetic library ###########################
+
+add_subdirectory(lib/modular_arithmetic)
+
 # Threads & GNU GMP library ##########################################
 
 find_package(Threads REQUIRED QUIET)
@@ -82,12 +86,12 @@ set(SRC_FILES main.cpp pseudosquares_prime_sieve.cpp)
 
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
-target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::primesieve ${GMP_LIBRARY})
+target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::primesieve hurchalla_modular_arithmetic ${GMP_LIBRARY})
 
 # Test executable
 enable_testing()
 add_executable(tests tests.cpp pseudosquares_prime_sieve.cpp)
-target_link_libraries(tests primesieve::primesieve ${GMP_LIBRARY})
+target_link_libraries(tests primesieve::primesieve hurchalla_modular_arithmetic ${GMP_LIBRARY})
 
 # Register test with CTest
 add_test(NAME tests COMMAND tests)
