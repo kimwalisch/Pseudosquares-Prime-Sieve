@@ -19,7 +19,7 @@
 #include "Vector.hpp"
 
 #include <primesieve.hpp>
-#include <gmp.h>
+#include <hurchalla/modular_arithmetic/modular_pow.h>
 
 #include <iostream>
 #include <array>
@@ -173,72 +173,32 @@ const std::array<Pseudosquare, 74> pseudosquares =
     { 373, to_uint128("4235025223080597503519329") }
 }};
 
-// GMP bignum variables
-struct Mpz
-{
-    mpz_t n;
-    mpz_t e;
-    mpz_t one;
-    mpz_t minus1;
-    mpz_t base;
-    mpz_t res;
-
-    Mpz()
-    {
-        mpz_init(n);
-        mpz_init(e);
-        mpz_init_set_ui(one, 1);
-        mpz_init(minus1);
-        mpz_init(base);
-        mpz_init(res);
-    }
-
-    ~Mpz()
-    {
-        mpz_clear(n);
-        mpz_clear(e);
-        mpz_clear(one);
-        mpz_clear(minus1);
-        mpz_clear(base);
-        mpz_clear(res);
-    }
-};
-
-void mpz_set_ui128(mpz_t z, uint128_t x)
-{
-    mpz_import(z, 1, 1, sizeof(uint128_t), 0, 0, &x);
-}
-
 // Sorenson's Pseudosquares Prime Test
-bool pseudosquares_prime_test(uint128_t n,
-                              int p,
-                              Mpz& z)
+bool pseudosquares_prime_test(uint128_t n, int p)
 {
     uint128_t e = (n - 1) >> 1;
-    mpz_set_ui128(z.n, n);
-    mpz_set_ui128(z.e, e);
-    mpz_sub_ui(z.minus1, z.n, 1);
-
+    uint128_t one = 1;
+    uint128_t minus1 = n - 1;
     int count_minus1 = 0;
 
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
     if ((n & 7) == 5)
     {
-        mpz_set_ui(z.base, 2);
-        mpz_powm(z.res, z.base, z.e, z.n);
-        if (mpz_cmp(z.res, z.minus1) != 0)
+        uint128_t base = 2;
+        uint128_t res = hurchalla::modular_pow(base, e, n);
+        if (res != minus1)
             return false;
     }
 
     // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
     for (std::size_t i = 0; primes[i] <= p; i++)
     {
-        mpz_set_ui(z.base, primes[i]);
-        mpz_powm(z.res, z.base, z.e, z.n);
+        uint128_t base = primes[i];
+        uint128_t res = hurchalla::modular_pow(base, e, n);
 
-        if (mpz_cmp(z.res, z.one) != 0 && mpz_cmp(z.res, z.minus1) != 0)
+        if (res != one && res != minus1)
             return false;
-        if (mpz_cmp(z.res, z.minus1) == 0)
+        if (res == minus1)
             count_minus1++;
     }
 
@@ -254,12 +214,12 @@ bool pseudosquares_prime_test(uint128_t n,
         // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
-            mpz_set_ui(z.base, pseudosquares[i].p);
-            mpz_powm(z.res, z.base, z.e, z.n);
+            uint128_t base = pseudosquares[i].p;
+            uint128_t res = hurchalla::modular_pow(base, e, n);
 
-            if (mpz_cmp(z.res, z.minus1) == 0)
+            if (res == minus1)
                 return true;
-            if (mpz_cmp(z.res, z.one) != 0)
+            if (res != one)
                 return false;
         }
     }
@@ -396,7 +356,6 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     initialize(stop, delta, s, p, verbose);
     Sieve sieve(delta);
 
-    Mpz z;
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
     Vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
@@ -448,7 +407,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
                     if (print_primes)
                         std::cout << n << "\n";
                 }
-                else if (pseudosquares_prime_test(n, p, z))
+                else if (pseudosquares_prime_test(n, p))
                 {
                     count++;
                     if (print_primes)
