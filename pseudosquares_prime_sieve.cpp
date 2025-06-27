@@ -15,6 +15,8 @@
 
 #include "pseudosquares_prime_sieve.hpp"
 #include "calculator.hpp"
+#include "Sieve.hpp"
+#include "Vector.hpp"
 
 #include <primesieve.hpp>
 #include <gmp.h>
@@ -23,14 +25,13 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <stdexcept>
 #include <stdint.h>
 
 namespace {
 
 // First 128 primes
-const std::array<int, 128> primes =
+const Array<int, 128> primes =
 {
       2,   3,   5,   7,  11,  13,  17,  19,  23,  29,
      31,  37,  41,  43,  47,  53,  59,  61,  67,  71,
@@ -48,7 +49,7 @@ const std::array<int, 128> primes =
 };
 
 /// Number of primes < 450
-const std::array<uint8_t, 450> prime_pi =
+const Array<uint8_t, 450> prime_pi =
 {
      0,   0,   1,   2,   2,   3,   3,   4,   4,   4,   4,   5,   5,   6,   6,
      6,   6,   7,   7,   8,   8,   8,   8,   9,   9,   9,   9,   9,   9,  10,
@@ -273,7 +274,7 @@ struct SievingPrime
 };
 
 // Generate sieving primes <= n
-std::vector<SievingPrime> get_sieving_primes(uint64_t n)
+Vector<SievingPrime> get_sieving_primes(uint64_t n)
 {
     // pi(x) <= x / (log(x) - 1.1) + 5, for x >= 4.
     // Pierre Dusart, https://arxiv.org/abs/1002.0442 eq. 6.6.
@@ -282,9 +283,9 @@ std::vector<SievingPrime> get_sieving_primes(uint64_t n)
     double pix = x / (std::log(x) - 1.1) + 5;
 
     std::size_t size = (std::size_t) pix;
-    std::vector<SievingPrime> sieving_primes;
+    Vector<SievingPrime> sieving_primes;
     sieving_primes.reserve(size);
-    primesieve::iterator it(2, n);
+    primesieve::iterator it(3, n);
     uint64_t prime;
 
     while ((prime = it.next_prime()) <= n)
@@ -301,7 +302,8 @@ std::vector<SievingPrime> get_sieving_primes(uint64_t n)
 //
 uint64_t get_segment_size(uint128_t stop)
 {
-    uint64_t segment_size = 1 << 14;
+    // Default sieve array size = 32 kilobytes
+    uint64_t segment_size = (32 << 10) * Sieve::numbers_per_byte();
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
     segment_size = std::max(segment_size, root4_stop);
     return segment_size;
@@ -344,7 +346,9 @@ void initialize(uint128_t stop,
 
     if (verbose)
     {
-        std::cout << "Sieve size: " << delta << " bytes" << std::endl;
+        std::cout << "Sieve size: " << delta / 16 << " bytes" << std::endl;
+        std::cout << "log(n): " << log_stop << std::endl;
+        std::cout << "delta: " << delta << std::endl;
         std::cout << "s: " << s << " (max sieving prime)" << std::endl;
         std::cout << "p: " << p << " (pseudosquare prime)" << std::endl;
         std::cout << "Lp: " << Lp << " (pseudosquare)" << std::endl;
@@ -359,11 +363,6 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
                                    bool print_primes,
                                    bool verbose)
 {
-    if (start < 2)
-        start = 2;
-    if (start > stop)
-        return 0;
-
     // After having run sieving and the pseudosquares prime
     // test, one has to remove perfect powers. Our implementation
     // misses this final step and is hence limited to
@@ -376,16 +375,31 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     if ((double) stop > 1.24 * 1e34)
         throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.24 * 10^34");
 
+    uint64_t count = 0;
+
+    if (start < 2)
+        start = 2;
+    if (start > stop)
+        return 0;
+    if (start <= 2)
+    {
+        count++;
+        if (print_primes)
+            std::cout << 2 << "\n";
+        start = 3;
+        if (start > stop)
+            return count;
+    }
+
     // Same variable names as in Sorenson's paper
     uint64_t delta, s, p;
     initialize(stop, delta, s, p, verbose);
-    std::vector<bool> sieve(delta);
+    Sieve sieve(delta);
 
     Mpz z;
-    uint64_t count = 0;
     uint64_t sqrt_stop = (uint64_t) std::sqrt(stop);
     uint64_t max_sieving_prime = std::min(s, sqrt_stop);
-    std::vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
+    Vector<SievingPrime> sieving_primes = get_sieving_primes(max_sieving_prime);
 
     for (uint128_t low = start; low <= stop; low += sieve.size())
     {
@@ -395,7 +409,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
         uint64_t sqrt_high = (uint64_t) std::sqrt(high);
         uint64_t max_i = uint64_t(high - low) + 1;
         max_sieving_prime = std::min(s, sqrt_high);
-        std::fill(sieve.begin(), sieve.end(), true);
+        sieve.set_all_bits();
 
         // Sieve out multiples of primes <= s
         for (auto& sp : sieving_primes)
@@ -410,20 +424,22 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
                 uint128_t q = low / prime;
                 uint128_t n = q * prime;
                 uint128_t pp = uint128_t(prime) * prime;
-                n += prime * (n < low);
+                n += prime & -(n < low);
+                n += prime & -((n & 1) == 0);
                 n = std::max(n, pp);
+                ASSERT(n % 2 == 0);
                 i = uint64_t(n - low);
             }
 
-            for (; i < max_i; i += prime)
-                sieve[i] = false;
+            for (; i < max_i; i += prime * 2)
+                sieve.unset_bit(i);
 
             sp.i = i - max_i;
         }
 
-        for (uint128_t n = low; n <= high; n++)
+        for (uint128_t n = low + (~low & 1); n <= high; n += 2)
         {
-            // sieve[i]=true is a prime
+            // sieve[n]=true is a potential prime
             if (sieve[n - low])
             {
                 if (max_sieving_prime >= sqrt_high)
