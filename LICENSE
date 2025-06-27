@@ -22,3 +22,27 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------------------
+
+Third-Party Notice:
+
+This project includes third-party source code from the
+**modular_arithmetic** library by Jeffrey Hurchalla <hurchalla@yahoo.com>,
+which is licensed under the Mozilla Public License Version 2.0.
+
+The source code for the modular_arithmetic library has been vendored into
+this repository under the directory: `src/ModArith/` (or adjust this path to match your actual layout).
+
+You may obtain a copy of the Mozilla Public License 2.0 at:
+https://www.mozilla.org/MPL/2.0/
+
+In accordance with Section 3.3 of the MPL 2.0, all modifications made to the
+original MPL-licensed files are available in source form under the same license.
+
+Original source:
+https://github.com/hurchalla/modular_arithmetic
+
+Vendored version: [commit hash or version if known]
+
+-------------------------------------------------------------------------------
