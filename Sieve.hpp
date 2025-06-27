@@ -38,7 +38,7 @@ public:
         std::fill(sieve_.begin(), sieve_.end(), 0xff);
     }
 
-    ALWAYS_INLINE std::size_t operator[](std::size_t i) const
+    ALWAYS_INLINE bool operator[](std::size_t i) const
     {
         return sieve_[i >> 4] & is_bit_[i & 15];
     }
