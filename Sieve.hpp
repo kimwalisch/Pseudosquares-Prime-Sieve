@@ -55,32 +55,32 @@ public:
 private:
     std::size_t size_;
     Vector<uint8_t> sieve_;
-    static const Array<uint64_t, 16> is_bit_;
-    static const Array<uint64_t, 16> unset_bit_;
+    static const Array<std::size_t, 16> is_bit_;
+    static const Array<std::size_t, 16> unset_bit_;
 };
 
-const Array<uint64_t, 16> Sieve::is_bit_ =
+const Array<std::size_t, 16> Sieve::is_bit_ =
 {
-    (1ull << 0),(1ull << 0),
-    (1ull << 1),(1ull << 1),
-    (1ull << 2),(1ull << 2),
-    (1ull << 3),(1ull << 3),
-    (1ull << 4),(1ull << 4),
-    (1ull << 5),(1ull << 5),
-    (1ull << 6),(1ull << 6),
-    (1ull << 7),(1ull << 7)
+    (1 << 0),(1 << 0),
+    (1 << 1),(1 << 1),
+    (1 << 2),(1 << 2),
+    (1 << 3),(1 << 3),
+    (1 << 4),(1 << 4),
+    (1 << 5),(1 << 5),
+    (1 << 6),(1 << 6),
+    (1 << 7),(1 << 7)
 };
 
-const Array<uint64_t, 16> Sieve::unset_bit_ =
+const Array<std::size_t, 16> Sieve::unset_bit_ =
 {
-    ~(1ull << 0), ~(1ull << 0),
-    ~(1ull << 1), ~(1ull << 1),
-    ~(1ull << 2), ~(1ull << 2),
-    ~(1ull << 3), ~(1ull << 3),
-    ~(1ull << 4), ~(1ull << 4),
-    ~(1ull << 5), ~(1ull << 5),
-    ~(1ull << 6), ~(1ull << 6),
-    ~(1ull << 7), ~(1ull << 7)
+    ~(1u << 0), ~(1u << 0),
+    ~(1u << 1), ~(1u << 1),
+    ~(1u << 2), ~(1u << 2),
+    ~(1u << 3), ~(1u << 3),
+    ~(1u << 4), ~(1u << 4),
+    ~(1u << 5), ~(1u << 5),
+    ~(1u << 6), ~(1u << 6),
+    ~(1u << 7), ~(1u << 7)
 };
 
 } // namespace
