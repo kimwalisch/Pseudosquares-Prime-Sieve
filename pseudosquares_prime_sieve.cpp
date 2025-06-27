@@ -302,7 +302,8 @@ Vector<SievingPrime> get_sieving_primes(uint64_t n)
 //
 uint64_t get_segment_size(uint128_t stop)
 {
-    uint64_t segment_size = 1 << 14;
+    // Default sieve array size = 32 kilobytes
+    uint64_t segment_size = (32 << 10) * Sieve::numbers_per_byte();
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
     segment_size = std::max(segment_size, root4_stop);
     return segment_size;
@@ -345,7 +346,9 @@ void initialize(uint128_t stop,
 
     if (verbose)
     {
-        std::cout << "Sieve size: " << delta << " bytes" << std::endl;
+        std::cout << "Sieve size: " << delta / 16 << " bytes" << std::endl;
+        std::cout << "log(n): " << log_stop << std::endl;
+        std::cout << "delta: " << delta << std::endl;
         std::cout << "s: " << s << " (max sieving prime)" << std::endl;
         std::cout << "p: " << p << " (pseudosquare prime)" << std::endl;
         std::cout << "Lp: " << Lp << " (pseudosquare)" << std::endl;

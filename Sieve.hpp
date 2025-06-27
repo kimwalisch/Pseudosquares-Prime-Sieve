@@ -33,6 +33,11 @@ public:
         return size_;
     }
 
+    static std::size_t numbers_per_byte()
+    {
+        return 16;
+    }
+
     void set_all_bits()
     {
         std::fill(sieve_.begin(), sieve_.end(), 0xff);
