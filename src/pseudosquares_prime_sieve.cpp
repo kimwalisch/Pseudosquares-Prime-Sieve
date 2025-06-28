@@ -21,6 +21,7 @@
 #include <primesieve.hpp>
 #include <hurchalla/modular_arithmetic/modular_pow.h>
 #include <hurchalla/montgomery_arithmetic/MontgomeryForm.h>
+#include <hurchalla/montgomery_arithmetic/montgomery_form_aliases.h>
 
 #include <iostream>
 #include <array>
@@ -186,7 +187,15 @@ uint128_t modpow(uint64_t base, uint128_t exponent, uint128_t modulus)
     ASSERT(modulus % 2 == 1);
     ASSERT(exponent < modulus);
 
-    if (modulus <= std::numeric_limits<uint64_t>::max())
+    if (modulus <= std::numeric_limits<uint64_t>::max() / 4)
+    {
+        hurchalla::MontgomeryQuarter<uint64_t> mf(modulus);
+        auto base_montval = mf.convertIn(base);
+        auto res_montval = mf.pow(base_montval, exponent);
+        uint64_t res = mf.convertOut(res_montval);
+        return res;
+    }
+    else if (modulus <= std::numeric_limits<uint64_t>::max())
     {
         hurchalla::MontgomeryForm<uint64_t> mf(modulus);
         auto base_montval = mf.convertIn(base);
@@ -196,7 +205,10 @@ uint128_t modpow(uint64_t base, uint128_t exponent, uint128_t modulus)
     }
     else
     {
-        hurchalla::MontgomeryForm<uint128_t> mf(modulus);
+        // Our Pseudosquares Prime Sieve implementation
+        // is limited by n (modulus) <= 1.23 * 10^34
+        ASSERT(modulus <= std::numeric_limits<uint128_t>::max() / 4);
+        hurchalla::MontgomeryQuarter<uint128_t> mf(modulus);
         auto base_montval = mf.convertIn(base);
         auto res_montval = mf.pow(base_montval, exponent);
         uint128_t res = mf.convertOut(res_montval);
