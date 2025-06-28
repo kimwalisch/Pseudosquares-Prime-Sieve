@@ -45,11 +45,13 @@ public:
 
     ALWAYS_INLINE bool operator[](std::size_t i) const
     {
+        ASSERT(i < size_);
         return sieve_[i >> 4] & is_bit_[i & 15];
     }
 
     ALWAYS_INLINE void unset_bit(std::size_t i)
     {
+        ASSERT(i < size_);
         sieve_[i >> 4] &= unset_bit_[i & 15];
     }
 
