@@ -189,17 +189,21 @@ uint128_t modpow(uint64_t base, uint128_t exponent, uint128_t modulus)
 
     if (modulus <= std::numeric_limits<uint64_t>::max() / 4)
     {
-        hurchalla::MontgomeryQuarter<uint64_t> mf(modulus);
+        uint64_t e = (uint64_t) exponent;
+        uint64_t m = (uint64_t) modulus;
+        hurchalla::MontgomeryQuarter<uint64_t> mf(m);
         auto base_montval = mf.convertIn(base);
-        auto res_montval = mf.pow(base_montval, exponent);
+        auto res_montval = mf.pow(base_montval, e);
         uint64_t res = mf.convertOut(res_montval);
         return res;
     }
     else if (modulus <= std::numeric_limits<uint64_t>::max())
     {
-        hurchalla::MontgomeryForm<uint64_t> mf(modulus);
+        uint64_t e = (uint64_t) exponent;
+        uint64_t m = (uint64_t) modulus;
+        hurchalla::MontgomeryForm<uint64_t> mf(m);
         auto base_montval = mf.convertIn(base);
-        auto res_montval = mf.pow(base_montval, exponent);
+        auto res_montval = mf.pow(base_montval, e);
         uint64_t res = mf.convertOut(res_montval);
         return res;
     }
