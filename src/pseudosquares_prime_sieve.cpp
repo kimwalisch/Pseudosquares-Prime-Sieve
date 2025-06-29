@@ -227,13 +227,47 @@ bool pseudosquares_prime_test(uint128_t n, int p)
 
 struct SievingPrime
 {
-    uint64_t prime;
-    int64_t i;
+    uint32_t prime;
+    int32_t i;
+
+    SievingPrime(uint64_t p, int64_t index)
+    {
+        set_prime(p);
+        set_index(index);
+    }
+
+    void set_prime(uint64_t p)
+    {
+        ASSERT(p <= std::numeric_limits<decltype(prime)>::max());
+        prime = (decltype(prime)) p;
+    }
+
+    void set_index(int64_t index)
+    {
+        ASSERT(index <= std::numeric_limits<decltype(i)>::max());
+        i = (decltype(i)) index;
+    }
 };
 
 // Generate sieving primes <= n
 Vector<SievingPrime> get_sieving_primes(uint64_t n)
 {
+    // We sieve using all sieving primes <= s (n).
+    // Hence, s is the maximum sieving prime.
+    // We store the sieving prime in the uint32_t
+    // SievingPrime::prime variable.
+    if (n > std::numeric_limits<uint32_t>::max())
+        throw std::runtime_error("get_sieving_primes: n must be <= 2^32");
+
+    // We sieve using all sieving primes <= s (n).
+    // Hence, s is the maximum sieving prime. For each
+    // sieving prime we store its sieve array index
+    // in the int32_t SievingPrime::i variable. Since
+    // we use i += prime * 2; the maximum sieving
+    // prime must be <= max(int32_t) / 2.
+    if (n > std::numeric_limits<int32_t>::max() / 2)
+        throw std::runtime_error("get_sieving_primes: n must be <= 2^30");
+
     // pi(x) <= x / (log(x) - 1.1) + 5, for x >= 4.
     // Pierre Dusart, https://arxiv.org/abs/1002.0442 eq. 6.6.
     double x = (double) n;
@@ -247,7 +281,7 @@ Vector<SievingPrime> get_sieving_primes(uint64_t n)
     uint64_t prime;
 
     while ((prime = it.next_prime()) <= n)
-        sieving_primes.push_back({prime, -1});
+        sieving_primes.emplace_back(prime, -1);
 
     return sieving_primes;
 }
@@ -330,7 +364,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     // formula n / s < max(Lp) and since we only have a list of
     // pseudosqaures up to max(Lp) = L_373 our implementation
     // requires n <= 1.73 * 10^33, see initialize().
-    if ((double) stop > 1.73 * 10^33)
+    if ((double) stop > 1.73 * 1e33)
         throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.73 * 10^33");
 
     uint64_t count = 0;
@@ -380,7 +414,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
             {
                 uint128_t q = low / prime;
                 uint128_t n = q * prime;
-                uint128_t pp = uint128_t(prime) * prime;
+                uint128_t pp = uint64_t(prime) * prime;
                 n += prime & -(n < low);
                 n += prime & -((n & 1) == 0);
                 n = std::max(n, pp);
@@ -391,7 +425,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
             for (; i < max_i; i += prime * 2)
                 sieve.unset_bit(i);
 
-            sp.i = i - max_i;
+            sp.set_index(i - max_i);
         }
 
         for (uint128_t n = low + (~low & 1); n <= high; n += 2)
