@@ -39,7 +39,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
     using C = typename MF::CanonicalValue;
     using std::size_t;
 
-    constexpr size_t P = 5;   // (1 << P) == the k in k-ary exponentiation
+    constexpr int P = 5;   // (1 << P) == the k in k-ary exponentiation
 
     // initialize the precalculation table for k-ary pow algorithm
     static_assert(P > 0);
@@ -62,7 +62,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
     // because we returned above if (n <= MASK), we can assert the following:
     HPBC_ASSERT(numbits > P);
 
-    int shift = numbits - static_cast<int>(P);
+    int shift = numbits - P;
     U tmp = n >> shift;
     HPBC_ASSERT(tmp <= MASK);
     // normally we'd use (tmp & MASK), but it's redundant with tmp <= MASK
@@ -70,7 +70,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
     V result = table[index];
 
 
-    while (shift >= static_cast<int>(P)) {
+    while (shift >= P) {
 //        HURCHALLA_REQUEST_UNROLL_LOOP
         for (int i=0; i<P; ++i)
             result = mf.square(result);
@@ -82,7 +82,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
             --shift;
         }
 #endif
-        shift -= static_cast<int>(P);
+        shift -= P;
 // TODO: maybe optimize next line, since n may be > 64bit
         tmp = n >> shift;
         index = static_cast<size_t>(tmp) & MASK;
@@ -116,7 +116,7 @@ array_montgomery_two_pow(const std::array<MF, ARRAY_SIZE>& mf, const std::array<
     using C = typename MF::CanonicalValue;
     using std::size_t;
 
-    constexpr size_t P = 5;   // (1 << P) == the k in k-ary exponentiation
+    constexpr int P = 5;   // (1 << P) == the k in k-ary exponentiation
 
     // initialize the precalculation table for k-ary pow algorithm
     static_assert(P > 0);
@@ -152,7 +152,7 @@ array_montgomery_two_pow(const std::array<MF, ARRAY_SIZE>& mf, const std::array<
     // because we returned above if (n_max <= MASK), we can assert the following:
     HPBC_ASSERT(numbits > P);
 
-    int shift = numbits - static_cast<int>(P);
+    int shift = numbits - P;
     std::array<V, ARRAY_SIZE> result;
     std::array<U, ARRAY_SIZE> tmp;
     HURCHALLA_REQUEST_UNROLL_LOOP for (int j=0; j<ARRAY_SIZE; ++j) {
@@ -163,12 +163,12 @@ array_montgomery_two_pow(const std::array<MF, ARRAY_SIZE>& mf, const std::array<
     }
 
 
-    while (shift >= static_cast<int>(P)) {
+    while (shift >= P) {
         for (int i=0; i<P; ++i) {
             HURCHALLA_REQUEST_UNROLL_LOOP for (int j=0; j<ARRAY_SIZE; ++j)
                 result[j] = mf[j].square(result[j]);
         }
-        shift -= static_cast<int>(P);
+        shift -= P;
         std::array<size_t, ARRAY_SIZE> index;
         HURCHALLA_REQUEST_UNROLL_LOOP for (int j=0; j<ARRAY_SIZE; ++j) {
 // TODO: maybe optimize next line, since n may be > 64bit
