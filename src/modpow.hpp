@@ -94,7 +94,7 @@ uint128_t modpow(uint64_t base, uint128_t exponent, uint128_t modulus)
     else
     {
         // Our Pseudosquares Prime Sieve implementation
-        // is limited by n (modulus) <= 1.23 * 10^34
+        // is limited by n (modulus) <= 1.73 * 10^33
         ASSERT(modulus <= std::numeric_limits<uint128_t>::max() / 4);
         hurchalla::MontgomeryQuarter<uint128_t> mf(modulus);
         auto base_montval = mf.convertIn(base);

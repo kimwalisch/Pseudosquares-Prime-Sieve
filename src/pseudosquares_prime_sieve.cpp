@@ -261,7 +261,7 @@ Vector<SievingPrime> get_sieving_primes(uint64_t n)
 uint64_t get_segment_size(uint128_t stop)
 {
     // Default sieve array size = 32 kilobytes
-    uint64_t segment_size = (32 << 10) * Sieve::numbers_per_byte();
+    uint64_t segment_size = (256 << 10) * Sieve::numbers_per_byte();
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
     segment_size = std::max(segment_size, root4_stop);
     return segment_size;
@@ -278,18 +278,18 @@ void initialize(uint128_t stop,
     // sieving, we sieve using the sieving primes <= s.
     delta = get_segment_size(stop);
 
-    double log_stop = std::log(stop);
+    double log_stop = std::log(delta);
     log_stop = std::max(1.0, log_stop);
     s = delta * log_stop;
     uint128_t Lp;
 
     // We have a list of known pseudosquares up to
     // max(Lp) = L_373 ~ 4.2 * 10^24. Hence, using
-    // delta = n^(1/4.5) and s = delta * log(n)
+    // delta = n^(1/4.5) and s = delta * log(delta)
     // we can sieve primes up to n:
     // n / s < Lp
-    // n / (n^(1/4.5) * log(n)) < 4.2 * 10^24
-    // n < 1.24 * 10^34
+    // n / (n^(1/4.5) * log(n^(1/4.5))) < 4.2 * 10^24
+    // n < 1.74083 * 10^33
     if (stop / s >= pseudosquares.back().Lp)
         throw std::runtime_error("pseudosquares_prime_sieve: n/s must be < max(Lp)");
 
@@ -329,9 +329,9 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     // However, our implementation is also limited by the
     // formula n / s < max(Lp) and since we only have a list of
     // pseudosqaures up to max(Lp) = L_373 our implementation
-    // requires n < 1.24 * 10^34, see initialize().
-    if ((double) stop > 1.24 * 1e34)
-        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.24 * 10^34");
+    // requires n <= 1.73 * 10^33, see initialize().
+    if ((double) stop > 1.73 * 10^33)
+        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.73 * 10^33");
 
     uint64_t count = 0;
 

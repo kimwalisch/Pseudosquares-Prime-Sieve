@@ -1,7 +1,7 @@
 ///
 /// @file   main.cpp
 /// @brief  Command-line program which uses the Pseudosquares Prime
-///         Sieve algorithm to generate primes ≤ 1.23 * 10^34.
+///         Sieve algorithm to generate primes ≤ 1.73 * 10^33.
 ///         The algorithm has been parallelized using std::async.
 ///
 /// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
@@ -28,7 +28,7 @@ void help(int exit_code)
 {
     const std::string help_menu =
         "Usage: pseudosquares_prime_sieve [START] STOP\n"
-        "Sieve the primes inside [START, STOP] (<= 10^34) using\n"
+        "Sieve the primes inside [START, STOP] (<= 10^33) using\n"
         "J. P. Sorenson's Pseudosquares Prime Sieve.\n"
         "\n"
         "Options:\n"
