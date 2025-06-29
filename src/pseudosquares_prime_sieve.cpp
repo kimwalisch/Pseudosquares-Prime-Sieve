@@ -185,7 +185,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
     if ((n & 7) == 5)
     {
-        uint128_t res = modpow(2, e, n);
+        uint128_t res = modpow<2>(e, n);
         if (res != minus1)
             return false;
     }
