@@ -23,7 +23,6 @@
 #include <primesieve.hpp>
 
 #include <iostream>
-#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
@@ -97,7 +96,7 @@ struct Pseudosquare
 };
 
 // List of known pseudosquares <= 4.2 * 10^24
-const std::array<Pseudosquare, 74> pseudosquares =
+const Array<Pseudosquare, 74> pseudosquares =
 {{
       { 2, to_uint128("17") },
       { 3, to_uint128("73") },

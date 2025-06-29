@@ -15,17 +15,18 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <stdexcept>
 #include <stdint.h>
 #include <type_traits>
 #include <utility>
 
 namespace {
 
-/// Vector is a dynamically growing array.
-/// It has the same API (though not complete) as std::vector but its
-/// resize() method does not default initialize memory for built-in
-/// integer types. It does however default initialize classes and
-/// struct types if they have a constructor. It also prevents bounds
+/// Vector is a dynamically growing array. It has the same API
+/// (though not complete) as std::vector but its resize() method
+/// does not default initialize memory for built-in integer
+/// types. It does however default initialize classes and struct
+/// types if they have a constructor. It also prevents bounds
 /// checks in release builds which is important for our sieve's
 /// performance, e.g. the Fedora Linux distribution compiles with
 /// -D_GLIBCXX_ASSERTIONS which enables std::vector bounds checks.
@@ -134,6 +135,22 @@ public:
   const T& operator[](std::size_t pos) const noexcept
   {
     ASSERT(pos < size());
+    return array_[pos];
+  }
+
+  T& at(std::size_t pos)
+  {
+    if (pos >= size())
+      throw std::out_of_range("Vector pos >= size!");
+  
+    return array_[pos];
+  }
+
+  const T& at(std::size_t pos) const
+  {
+    if (pos >= size())
+      throw std::out_of_range("Vector pos >= size!");
+
     return array_[pos];
   }
 
@@ -401,6 +418,22 @@ public:
   const T& operator[](std::size_t pos) const noexcept
   {
     ASSERT(pos < size());
+    return array_[pos];
+  }
+
+  T& at(std::size_t pos)
+  {
+    if (pos >= size())
+      throw std::out_of_range("Array pos >= size!");
+  
+    return array_[pos];
+  }
+
+  const T& at(std::size_t pos) const
+  {
+    if (pos >= size())
+      throw std::out_of_range("Array pos >= size!");
+
     return array_[pos];
   }
 
