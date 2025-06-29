@@ -45,7 +45,7 @@ cmake --build . --parallel
 
 # Usage examples
 
-The ```pseudosquares_prime_sieve``` program can generate primes ≤ $10^{33}$ using little memory. Our implementation uses $O(\sqrt[4.5]{n})$ memory. In practice, our implementation uses about 30 megabytes of memory per thread when sieving near $10^{18}$ and about 33 megabytes of memory per thread when sieving near $10^{30}$.
+The ```pseudosquares_prime_sieve``` program can generate primes ≤ $10^{33}$ using little memory. Our implementation uses $O(\sqrt[4.5]{n})$ memory. In practice, our implementation uses about 30 MiB of memory per thread when sieving near $10^{18}$ and about 33 MiB of memory per thread when sieving near $10^{30}$.
 
 ```bash
 # Count primes inside [1e15 1e15+1e8] using all CPU cores
