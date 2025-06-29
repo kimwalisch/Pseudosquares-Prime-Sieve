@@ -174,57 +174,6 @@ const Array<Pseudosquare, 74> pseudosquares =
     { 373, to_uint128("4235025223080597503519329") }
 }};
 
-// Sorenson's Pseudosquares Prime Test
-bool pseudosquares_prime_test(uint128_t n, int p)
-{
-    uint128_t e = (n - 1) >> 1;
-    uint128_t one = 1;
-    uint128_t minus1 = n - 1;
-    int count_minus1 = 0;
-
-    // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
-    if ((n & 7) == 5)
-    {
-        uint128_t res = modpow<2>(e, n);
-        if (res != minus1)
-            return false;
-    }
-
-    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
-    for (std::size_t i = 0; primes[i] <= p; i++)
-    {
-        uint128_t res = modpow(primes[i], e, n);
-
-        if (res != one && res != minus1)
-            return false;
-        if (res == minus1)
-            count_minus1++;
-    }
-
-    // Condition (4) for n ≡ 1 mod 8:
-    if ((n & 7) == 1)
-    {
-        // Must either have at least one res ≡ -1
-        if (count_minus1 > 0)
-            return true;
-
-        // Or check all pi > p while Lpi <= n: pi^((n−1)/2) ≡ ±1 mod n
-        // This step is missing in Sorenson's paper. Sorenson
-        // confirmed it was a bug and suggested this fix.
-        for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
-        {
-            uint128_t res = modpow(pseudosquares[i].p, e, n);
-
-            if (res == minus1)
-                return true;
-            if (res != one)
-                return false;
-        }
-    }
-
-    return true;
-}
-
 struct SievingPrime
 {
     uint32_t prime;
@@ -344,6 +293,57 @@ void initialize(uint128_t stop,
         std::cout << "p: " << p << " (pseudosquare prime)" << std::endl;
         std::cout << "Lp: " << Lp << " (pseudosquare)" << std::endl;
     }
+}
+
+// Sorenson's Pseudosquares Prime Test
+bool pseudosquares_prime_test(uint128_t n, int p)
+{
+    uint128_t e = (n - 1) >> 1;
+    uint128_t one = 1;
+    uint128_t minus1 = n - 1;
+    int count_minus1 = 0;
+
+    // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
+    if ((n & 7) == 5)
+    {
+        uint128_t res = modpow<2>(e, n);
+        if (res != minus1)
+            return false;
+    }
+
+    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
+    for (std::size_t i = 0; primes[i] <= p; i++)
+    {
+        uint128_t res = modpow(primes[i], e, n);
+
+        if (res != one && res != minus1)
+            return false;
+        if (res == minus1)
+            count_minus1++;
+    }
+
+    // Condition (4) for n ≡ 1 mod 8:
+    if ((n & 7) == 1)
+    {
+        // Must either have at least one res ≡ -1
+        if (count_minus1 > 0)
+            return true;
+
+        // Or check all pi > p while Lpi <= n: pi^((n−1)/2) ≡ ±1 mod n
+        // This step is missing in Sorenson's paper. Sorenson
+        // confirmed it was a bug and suggested this fix.
+        for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
+        {
+            uint128_t res = modpow(pseudosquares[i].p, e, n);
+
+            if (res == minus1)
+                return true;
+            if (res != one)
+                return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace
