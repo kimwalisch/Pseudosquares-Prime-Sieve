@@ -46,7 +46,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
     constexpr size_t TABLESIZE = 1 << P;   
     C table[TABLESIZE];
     table[0] = mf.getUnityValue();   // montgomery one
-    for (int i=1; i<TABLESIZE; ++i)
+    for (size_t i=1; i<TABLESIZE; ++i)
         table[i] = mf.add(table[i-1], table[i-1]);
 
     constexpr size_t MASK = TABLESIZE - 1;
@@ -124,7 +124,7 @@ array_montgomery_two_pow(const std::array<MF, ARRAY_SIZE>& mf, const std::array<
     C table[TABLESIZE][ARRAY_SIZE];
     HURCHALLA_REQUEST_UNROLL_LOOP for (int j=0; j<ARRAY_SIZE; ++j)
         table[0][j] = mf[j].getUnityValue();   // montgomery one
-    for (int i=1; i<TABLESIZE; ++i) {
+    for (size_t i=1; i<TABLESIZE; ++i) {
         HURCHALLA_REQUEST_UNROLL_LOOP for (int j=0; j<ARRAY_SIZE; ++j)
             table[i][j] = mf[j].add(table[i-1][j], table[i-1][j]);
     }
