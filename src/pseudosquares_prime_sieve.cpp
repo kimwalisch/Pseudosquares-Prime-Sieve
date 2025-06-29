@@ -243,7 +243,7 @@ Vector<SievingPrime> get_sieving_primes(uint64_t n)
 //
 uint64_t get_segment_size(uint128_t stop)
 {
-    // Default sieve array size = 32 kilobytes
+    // Default sieve array size = 256 kilobytes
     uint64_t segment_size = (256 << 10) * Sieve::numbers_per_byte();
     uint64_t root4_stop = (uint64_t) std::pow(stop, 1.0 / 4.5);
     segment_size = std::max(segment_size, root4_stop);
