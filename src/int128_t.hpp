@@ -13,7 +13,9 @@
 #include <stdint.h>
 #include <algorithm>
 #include <ostream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 
 #if !defined(INT128_MAX)
 
@@ -21,6 +23,32 @@ using int128_t = __int128_t;
 using uint128_t = __uint128_t;
 
 namespace {
+
+consteval uint128_t to_uint128(std::string_view str)
+{
+    if (str.empty())
+        throw std::invalid_argument("Input string cannot be empty.");
+
+    uint128_t value = 0;
+    constexpr uint128_t max_val = uint128_t(-1);
+    constexpr uint128_t limit = max_val / 10;
+    constexpr int remainder = max_val % 10;
+
+    for (char c : str)
+    {
+        if (c < '0' || c > '9')
+            throw std::invalid_argument("Invalid character in input string.");
+
+        const int digit = c - '0';
+
+        if (value > limit || (value == limit && digit > remainder))
+            throw std::overflow_error("String represents a number too large for uint128_t.");
+
+        value = value * 10 + digit;
+    }
+
+    return value;
+}
 
 inline std::string to_string(uint128_t n)
 {

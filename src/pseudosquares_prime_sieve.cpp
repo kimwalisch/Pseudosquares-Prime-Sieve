@@ -14,7 +14,6 @@
 ///
 
 #include "pseudosquares_prime_sieve.hpp"
-#include "calculator.hpp"
 #include "int128_t.hpp"
 #include "modpow.hpp"
 #include "Sieve.hpp"
@@ -83,11 +82,6 @@ const Array<uint8_t, 450> prime_pi =
     81,  82,  82,  82,  82,  82,  82,  82,  82,  82,  82,  83,  83,  84,  84,
     84,  84,  84,  84,  85,  85,  85,  85,  86,  86,  86,  86,  86,  86,  87
 };
-
-uint128_t to_uint128(const char* str)
-{
-    return calculator::eval<uint128_t>(str);
-}
 
 struct Pseudosquare
 {
