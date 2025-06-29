@@ -312,9 +312,9 @@ void initialize(uint128_t stop,
     // sieving, we sieve using the sieving primes <= s.
     delta = get_segment_size(stop);
 
-    double log_stop = std::log(delta);
-    log_stop = std::max(1.0, log_stop);
-    s = delta * log_stop;
+    double log_delta = std::log(delta);
+    log_delta = std::max(1.0, log_delta);
+    s = delta * log_delta;
     uint128_t Lp;
 
     // We have a list of known pseudosquares up to
@@ -339,7 +339,6 @@ void initialize(uint128_t stop,
     if (verbose)
     {
         std::cout << "Sieve size: " << delta / Sieve::numbers_per_byte() << " bytes" << std::endl;
-        std::cout << "log(n): " << log_stop << std::endl;
         std::cout << "delta: " << delta << std::endl;
         std::cout << "s: " << s << " (max sieving prime)" << std::endl;
         std::cout << "p: " << p << " (pseudosquare prime)" << std::endl;
