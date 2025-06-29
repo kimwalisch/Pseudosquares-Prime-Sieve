@@ -15,13 +15,12 @@
 
 #include "pseudosquares_prime_sieve.hpp"
 #include "calculator.hpp"
+#include "int128_t.hpp"
+#include "modpow.hpp"
 #include "Sieve.hpp"
 #include "Vector.hpp"
 
 #include <primesieve.hpp>
-#include <hurchalla/modular_arithmetic/modular_pow.h>
-#include <hurchalla/montgomery_arithmetic/MontgomeryForm.h>
-#include <hurchalla/montgomery_arithmetic/montgomery_form_aliases.h>
 
 #include <iostream>
 #include <array>
@@ -175,50 +174,6 @@ const std::array<Pseudosquare, 74> pseudosquares =
     { 367, to_uint128("3655334429477057460046489") },
     { 373, to_uint128("4235025223080597503519329") }
 }};
-
-/// We use the hurchalla/modular_arithmetic
-/// library for doing modular exponentiations
-/// of 64-bit and 128-bit integers.
-///
-uint128_t modpow(uint64_t base, uint128_t exponent, uint128_t modulus)
-{
-    // Montgomery modular exponentiation
-    // requires that the modulus is odd.
-    ASSERT(modulus % 2 == 1);
-    ASSERT(exponent < modulus);
-
-    if (modulus <= std::numeric_limits<uint64_t>::max() / 4)
-    {
-        uint64_t e = (uint64_t) exponent;
-        uint64_t m = (uint64_t) modulus;
-        hurchalla::MontgomeryQuarter<uint64_t> mf(m);
-        auto base_montval = mf.convertIn(base);
-        auto res_montval = mf.pow(base_montval, e);
-        uint64_t res = mf.convertOut(res_montval);
-        return res;
-    }
-    else if (modulus <= std::numeric_limits<uint64_t>::max())
-    {
-        uint64_t e = (uint64_t) exponent;
-        uint64_t m = (uint64_t) modulus;
-        hurchalla::MontgomeryForm<uint64_t> mf(m);
-        auto base_montval = mf.convertIn(base);
-        auto res_montval = mf.pow(base_montval, e);
-        uint64_t res = mf.convertOut(res_montval);
-        return res;
-    }
-    else
-    {
-        // Our Pseudosquares Prime Sieve implementation
-        // is limited by n (modulus) <= 1.23 * 10^34
-        ASSERT(modulus <= std::numeric_limits<uint128_t>::max() / 4);
-        hurchalla::MontgomeryQuarter<uint128_t> mf(modulus);
-        auto base_montval = mf.convertIn(base);
-        auto res_montval = mf.pow(base_montval, exponent);
-        uint128_t res = mf.convertOut(res_montval);
-        return res;
-    }
-}
 
 // Sorenson's Pseudosquares Prime Test
 bool pseudosquares_prime_test(uint128_t n, int p)
