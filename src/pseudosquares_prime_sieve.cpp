@@ -297,23 +297,35 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     uint128_t minus1 = n - 1;
     int count_minus1 = 0;
 
-    // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
+    ASSERT(p >= 2);
+    uint128_t res = modpow<2>(e, n);
+
+    // Condition (4) for n ≡ 5 mod 8:
     if ((n & 7) == 5)
     {
-        uint128_t res = modpow<2>(e, n);
+        // 2^((n−1)/2) ≡ −1 mod n
         if (res != minus1)
             return false;
     }
 
-    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
-    for (std::size_t i = 0; primes[i] <= p; i++)
+    // Condition (3) for all pi ≤ p:
     {
-        uint128_t res = modpow(primes[i], e, n);
-
+        // 2^((n−1)/2) ≡ ±1 mod n
         if (res != one && res != minus1)
             return false;
         if (res == minus1)
             count_minus1++;
+
+        // For all 3 <= pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
+        for (std::size_t i = 1; primes[i] <= p; i++)
+        {
+            res = modpow(primes[i], e, n);
+
+            if (res != one && res != minus1)
+                return false;
+            if (res == minus1)
+                count_minus1++;
+        }
     }
 
     // Condition (4) for n ≡ 1 mod 8:
@@ -328,7 +340,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
-            uint128_t res = modpow(pseudosquares[i].p, e, n);
+            res = modpow(pseudosquares[i].p, e, n);
 
             if (res == minus1)
                 return true;
