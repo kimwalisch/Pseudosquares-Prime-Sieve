@@ -24,6 +24,8 @@ using uint128_t = __uint128_t;
 
 namespace {
 
+#if __cplusplus >= 202002L
+
 consteval uint128_t to_uint128(std::string_view str)
 {
     if (str.empty())
@@ -49,6 +51,24 @@ consteval uint128_t to_uint128(std::string_view str)
 
     return value;
 }
+
+#else
+
+constexpr uint128_t to_uint128_impl(std::string_view str, uint128_t value = 0)
+{
+    return str.empty() ? value
+        : (str.front() >= '0' && str.front() <= '9'
+            ? to_uint128_impl(str.substr(1), value * 10 + uint128_t(str.front() - '0'))
+            // Crash using infinite recursion in case of invalid input
+            : to_uint128_impl(str, value)); 
+}
+
+constexpr uint128_t to_uint128(std::string_view str)
+{
+    return to_uint128_impl(str);
+}
+
+#endif
 
 inline std::string to_string(uint128_t n)
 {
