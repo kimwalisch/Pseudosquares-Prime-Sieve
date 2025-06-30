@@ -14,7 +14,6 @@
 ///
 
 #include "pseudosquares_prime_sieve.hpp"
-#include "calculator.hpp"
 #include "int128_t.hpp"
 #include "modpow.hpp"
 #include "Sieve.hpp"
@@ -83,11 +82,6 @@ const Array<uint8_t, 450> prime_pi =
     81,  82,  82,  82,  82,  82,  82,  82,  82,  82,  82,  83,  83,  84,  84,
     84,  84,  84,  84,  85,  85,  85,  85,  86,  86,  86,  86,  86,  86,  87
 };
-
-uint128_t to_uint128(const char* str)
-{
-    return calculator::eval<uint128_t>(str);
-}
 
 struct Pseudosquare
 {
@@ -301,40 +295,44 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     uint128_t e = (n - 1) >> 1;
     uint128_t one = 1;
     uint128_t minus1 = n - 1;
-    int count_minus1 = 0;
+    ASSERT(p >= 2);
 
+    // 2^((n−1)/2) mod n
+    uint128_t res = modpow<2>(e, n);
+
+    // Condition (4) for n ≡ 1 mod 8: found -1 result
+    if ((n & 7) == 1 && res == minus1)
+        return true;
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
-    if ((n & 7) == 5)
-    {
-        uint128_t res = modpow<2>(e, n);
-        if (res != minus1)
-            return false;
-    }
+    if ((n & 7) == 5 && res != minus1)
+        return false;
+    // Condition (3): 2^((n−1)/2) ≡ ±1 mod n
+    if (res != one && res != minus1)
+        return false;
 
-    // Condition (3): for all pi ≤ p: pi^((n−1)/2) ≡ ±1 mod n
-    for (std::size_t i = 0; primes[i] <= p; i++)
+    // For 3 <= pi ≤ p: pi^((n−1)/2) mod n
+    for (std::size_t i = 1; primes[i] <= p; i++)
     {
-        uint128_t res = modpow(primes[i], e, n);
+        res = modpow(primes[i], e, n);
 
+        // Condition (4) for n ≡ 1 mod 8: found -1 result
+        if ((n & 7) == 1 && res == minus1)
+            return true;
+        // Condition (3): pi^((n−1)/2) ≡ ±1 mod n
         if (res != one && res != minus1)
             return false;
-        if (res == minus1)
-            count_minus1++;
     }
 
-    // Condition (4) for n ≡ 1 mod 8:
+    // Condition (4): for n ≡ 1 mod 8:
     if ((n & 7) == 1)
     {
-        // Must either have at least one res ≡ -1
-        if (count_minus1 > 0)
-            return true;
-
-        // Or check all pi > p while Lpi <= n: pi^((n−1)/2) ≡ ±1 mod n
+        // In case we have not found any -1 result so far,
+        // check all pi > p while Lpi <= n: pi^((n−1)/2) ≡ ±1 mod n
         // This step is missing in Sorenson's paper. Sorenson
         // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
-            uint128_t res = modpow(pseudosquares[i].p, e, n);
+            res = modpow(pseudosquares[i].p, e, n);
 
             if (res == minus1)
                 return true;
