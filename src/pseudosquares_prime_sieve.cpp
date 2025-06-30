@@ -292,10 +292,9 @@ void initialize(uint128_t stop,
 // Sorenson's Pseudosquares Prime Test
 bool pseudosquares_prime_test(uint128_t n, int p)
 {
-    uint128_t e = (n - 1) >> 1;
-    uint128_t one = 1;
-    uint128_t minus1 = n - 1;
     ASSERT(p >= 2);
+    uint128_t e = (n - 1) >> 1;
+    uint128_t minus1 = n - 1;
 
     // 2^((n−1)/2) mod n
     uint128_t res = modpow<2>(e, n);
@@ -307,7 +306,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     if ((n & 7) == 5 && res != minus1)
         return false;
     // Condition (3): 2^((n−1)/2) ≡ ±1 mod n
-    if (res != one && res != minus1)
+    if (res != 1 && res != minus1)
         return false;
 
     // For 3 <= pi ≤ p: pi^((n−1)/2) mod n
@@ -319,7 +318,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         if ((n & 7) == 1 && res == minus1)
             return true;
         // Condition (3): pi^((n−1)/2) ≡ ±1 mod n
-        if (res != one && res != minus1)
+        if (res != 1 && res != minus1)
             return false;
     }
 
@@ -336,7 +335,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
 
             if (res == minus1)
                 return true;
-            if (res != one)
+            if (res != 1)
                 return false;
         }
     }
