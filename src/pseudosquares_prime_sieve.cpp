@@ -332,7 +332,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
-            res = modpow(pseudosquares[i].p, e, n);
+            res = modpow(primes[i], e, n);
 
             if (res == minus1)
                 return true;
