@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Jeffrey Hurchalla.
+// Copyright (c) 2024-2025 Jeffrey Hurchalla.
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@
 #define HURCHALLA_MONTGOMERY_ARITHMETIC_ABSTRACT_MONTGOMERY_FORM_H_INCLUDED
 
 
-#include "hurchalla/montgomery_arithmetic/low_level_api/optimization_tag_structs.h"
+#include "hurchalla/modular_arithmetic/detail/optimization_tag_structs.h"
 #include "hurchalla/util/traits/is_equality_comparable.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
@@ -149,18 +149,6 @@ public:
     virtual CanonicalValue add(CanonicalValue x, CanonicalValue y)
         const = 0;
 
-    virtual MontgomeryValue subtract(MontgomeryValue x, MontgomeryValue y)
-        const = 0;
-
-    virtual MontgomeryValue subtract(MontgomeryValue x, CanonicalValue y)
-        const = 0;
-
-    virtual MontgomeryValue subtract(CanonicalValue x, MontgomeryValue y)
-        const = 0;
-
-    virtual CanonicalValue subtract(CanonicalValue x, CanonicalValue y)
-        const = 0;
-
     virtual MontgomeryValue unorderedSubtract(MontgomeryValue x,
         MontgomeryValue y) const = 0;
     
@@ -181,6 +169,17 @@ public:
 
 
 private:
+    virtual MontgomeryValue subtract(MontgomeryValue x, MontgomeryValue y,
+        bool useLowlatencyTag) const = 0;
+
+    virtual MontgomeryValue subtract(MontgomeryValue x, CanonicalValue y,
+        bool useLowlatencyTag) const = 0;
+
+    virtual MontgomeryValue subtract(CanonicalValue x, MontgomeryValue y,
+        bool useLowlatencyTag) const = 0;
+
+    virtual CanonicalValue subtract(CanonicalValue x, CanonicalValue y,
+        bool useLowlatencyTag) const = 0;
 
     virtual MontgomeryValue multiply2(MontgomeryValue x, MontgomeryValue y,
         bool useLowlatencyTag) const = 0;
@@ -218,6 +217,27 @@ private:
 public:
 // adapters for functions that have template params; we wrap the virtual funcs
 // since virtual funcs can't be templated.
+
+    template <class PTAG = LowuopsTag>
+    MontgomeryValue subtract(MontgomeryValue x, MontgomeryValue y) const
+    {
+        return subtract(x, y, std::is_same<PTAG, LowlatencyTag>::value);
+    }
+    template <class PTAG = LowuopsTag>
+    MontgomeryValue subtract(MontgomeryValue x, CanonicalValue y) const
+    {
+        return subtract(x, y, std::is_same<PTAG, LowlatencyTag>::value);
+    }
+    template <class PTAG = LowuopsTag>
+    MontgomeryValue subtract(CanonicalValue x, MontgomeryValue y) const
+    {
+        return subtract(x, y, std::is_same<PTAG, LowlatencyTag>::value);
+    }
+    template <class PTAG = LowuopsTag>
+    CanonicalValue subtract(CanonicalValue x, CanonicalValue y) const
+    {
+        return subtract(x, y, std::is_same<PTAG, LowlatencyTag>::value);
+    }
 
     template <class PTAG = LowlatencyTag>
     MontgomeryValue multiply(MontgomeryValue x, MontgomeryValue y) const

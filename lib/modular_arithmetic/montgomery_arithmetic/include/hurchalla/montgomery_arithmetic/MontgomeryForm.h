@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2024 Jeffrey Hurchalla.
+// Copyright (c) 2020-2025 Jeffrey Hurchalla.
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@
 #include "hurchalla/montgomery_arithmetic/detail/ImplMontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontgomeryDefault.h"
 #include "hurchalla/montgomery_arithmetic/detail/platform_specific/montgomery_pow.h"
-#include "hurchalla/montgomery_arithmetic/low_level_api/optimization_tag_structs.h"
+#include "hurchalla/modular_arithmetic/detail/optimization_tag_structs.h"
 #include "hurchalla/util/traits/is_equality_comparable.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
@@ -169,10 +169,23 @@ public:
     }
 
 
-    // Returns the modular sum of (the montgomery values) x and y.  Performance
-    // note: add may have lower latency than subtract (it should never have
-    // higher latency), and subtract may use fewer uops than add (it should
-    // never use more uops).
+    // Returns the modular sum of (the montgomery values) x and y.
+    // [Note on Performance #1:] You will get add() to complete with its lowest
+    // latency if 'y' was not recently changed or set before your call of add().
+    // Since addition is a commutative operation, you can optionally switch the
+    // order of 'x' and 'y' in your call to add() - this will give you the
+    // benefit of lower latency when you see that it is 'x' rather than 'y' that
+    // has not recently changed.
+    // [Note on Performance #2:] By default this class's function subtract()
+    // will use one fewer uop than add uses (subtract never uses more uops).  So
+    // optionally, if you will be performing many additions involving 'y' and
+    // you want to minimize the uop count (presumably to increase throughput),
+    // *and* if you see that 'y' will remain constant throughout many calls of
+    // add(), then you could calculate  negative_y = negate(y)  and then
+    // afterward instead of calling add() you could call
+    // subtract(x, negative_y), with different values for x.  So long as you
+    // call subtract() many times and call negate() only once, you will likely
+    // get a lower total uop count than you would from using add().
     HURCHALLA_FORCE_INLINE
     MontgomeryValue add(MontgomeryValue x, MontgomeryValue y) const
     {
@@ -212,10 +225,14 @@ public:
 
     // Returns the modular difference of (the montgomery values) x and y.  More
     // precisely, x minus y.
-    HURCHALLA_FORCE_INLINE
+    // Usually you don't want to specify PTAG (just accept the default of
+    // LowuopsTag).  For advanced use: PTAG can be either LowlatencyTag or
+    // LowuopsTag, which will optimize this function for either low latency or a
+    // low uop count.
+    template <class PTAG = LowuopsTag> HURCHALLA_FORCE_INLINE
     MontgomeryValue subtract(MontgomeryValue x, MontgomeryValue y) const
     {
-        return impl.subtract(x, y);
+        return impl.template subtract<PTAG>(x, y);
     }
     // Returns the modular difference of the montgomery value x minus the
     // canonical value y.  Performance note: this function is sometimes more
@@ -223,27 +240,27 @@ public:
     // efficient, so it can be useful to call getCanonicalValue outside of a
     // loop to get 'y' as a CanonicalValue, when you are calling subtract()
     // inside a loop.
-    HURCHALLA_FORCE_INLINE
+    template <class PTAG = LowuopsTag> HURCHALLA_FORCE_INLINE
     MontgomeryValue subtract(MontgomeryValue x, CanonicalValue y) const
     {
-        MontgomeryValue ret = impl.subtract(x, y);
+        MontgomeryValue ret = impl.template subtract<PTAG>(x, y);
         HPBC_ASSERT(getCanonicalValue(ret) ==
                getCanonicalValue(subtract(x, static_cast<MontgomeryValue>(y))));
         return ret;
     }
-    HURCHALLA_FORCE_INLINE
+    template <class PTAG = LowuopsTag> HURCHALLA_FORCE_INLINE
     MontgomeryValue subtract(CanonicalValue x, MontgomeryValue y) const
     {
-        MontgomeryValue ret = impl.subtract(x, y);
+        MontgomeryValue ret = impl.template subtract<PTAG>(x, y);
         HPBC_ASSERT(getCanonicalValue(ret) ==
                getCanonicalValue(subtract(static_cast<MontgomeryValue>(x), y)));
         return ret;
     }
     // Subtracting CanonicalValues can be more efficient than the above funcs
-    HURCHALLA_FORCE_INLINE
+    template <class PTAG = LowuopsTag> HURCHALLA_FORCE_INLINE
     CanonicalValue subtract(CanonicalValue x, CanonicalValue y) const
     {
-        CanonicalValue ret = impl.subtract(x, y);
+        CanonicalValue ret = impl.template subtract<PTAG>(x, y);
         HPBC_ASSERT(ret == getCanonicalValue(subtract(
             static_cast<MontgomeryValue>(x), static_cast<MontgomeryValue>(y))));
         return ret;
@@ -402,12 +419,9 @@ public:
 
 
     // Returns the modular evaluation of  x * x.
-    // Performance notes:
-    //   For some MontyTypes, this function can offer better performance than
-    // multiply(x, x), so long as type T is the same size or smaller than the
-    // CPU's native integer register size.  If type T is larger than the CPU's
-    // integer register size, this function is likely to perform worse or no
-    // better than multiply(x, x).
+    // Performance note: for some MontyTypes, this function will provide better
+    // performance than multiply(x, x).  It is never less efficient, and so you
+    // should always prefer to use it over multiply(x, x).
     template <class PTAG = LowlatencyTag> HURCHALLA_FORCE_INLINE
     MontgomeryValue square(MontgomeryValue x) const
     {
@@ -417,9 +431,7 @@ public:
         return ret;
     }
     // "Fused square with subtract" operation.  Returns the modular evaluation
-    // of (x * x) - cv.  Note that this function is usually but not always a
-    // good performance replacement for fmsub(x, x, cv); see the comments above
-    // square() for details.
+    // of (x * x) - cv.
     template <class PTAG = LowlatencyTag> HURCHALLA_FORCE_INLINE
     MontgomeryValue fusedSquareSub(MontgomeryValue x, CanonicalValue cv) const
     {
@@ -429,9 +441,7 @@ public:
         return ret;
     }
     // "Fused square with add" operation.  Returns the modular evaluation
-    // of (x * x) + cv.  Note that this function is usually but not always a
-    // good performance replacement for fmsub(x, x, cv); see the comments above
-    // square() for details.
+    // of (x * x) + cv.
     template <class PTAG = LowlatencyTag> HURCHALLA_FORCE_INLINE
     MontgomeryValue fusedSquareAdd(MontgomeryValue x, CanonicalValue cv) const
     {
@@ -487,14 +497,15 @@ public:
 
 
     // Returns the "greatest common divisor" of the standard representations
-    // (non-montgomery) of both x and the modulus, using the supplied functor.
-    // The functor must take two integral arguments of the same type and return
-    // the gcd of its two arguments.  [Usually you would make the functor's
-    // operator() a templated function, where the template parameter represents
-    // the integral argument type.  Or more simply, you can just use a lambda,
-    // with 'auto' type for its function parameters.]
-    // Calling  gcd_with_modulus(x)  is more efficient than computing the
-    // equivalent value  gcd_functor(convertOut(x), modulus).
+    // (non-montgomery) of both x and the modulus, using the gcd functor that
+    // you supply. The functor must take two integral arguments of the same type
+    // and return the gcd of its two arguments.  Calling gcd_with_modulus(x)
+    // will return the same value as gcd_functor(convertOut(x), modulus), but
+    // using  gcd_with_modulus()  is more efficient.
+    // [With regard to the functor you supply, usually you would make the
+    // functor's operator() a templated function, where the template parameter
+    // represents the integral argument type.  Or more simply, you could just
+    // use a lambda, with 'auto' type for its function parameters.]
     template <class F> HURCHALLA_FORCE_INLINE
     T gcd_with_modulus(MontgomeryValue x, const F& gcd_functor) const
     {

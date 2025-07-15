@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <utility>
+#include <vector>
 
 
 #ifndef NDEBUG
@@ -142,6 +143,24 @@ void bench_range(U min, U range)
       auto t1 = steady_clock::now();
       mtp_time = dsec(t1-t0).count();
       std::cout << "(ignore) " << uint_to_string(total_zeros) << " ";
+   }
+
+   dsec::rep mkp_time = 0;
+   {
+      // the only purpose of total_zeros is to prevent the optimizer from
+      // eliminating the function call we want to benchmark in the loop.
+      U total_zeros = 0;
+      auto t0 = steady_clock::now();
+      for (U x = max; x > min; x = x-2) {
+         MontType mf(x);
+         auto mont_two = mf.add(mf.getUnityValue(), mf.getUnityValue());
+         auto val = hurchalla::montgomery_pow_kary(mf, mont_two, static_cast<U>(x-1));
+         if (mf.getCanonicalValue(val) == mf.getZeroValue())
+            total_zeros++;
+      }
+      auto t1 = steady_clock::now();
+      mkp_time = dsec(t1-t0).count();
+      std::cout << uint_to_string(total_zeros) << " ";
    }
 
    dsec::rep mfp_time = 0;
@@ -331,6 +350,7 @@ void bench_range(U min, U range)
    std::cout << "\n\n";
 
    std::cout << "montgomery_two_pow() time: " << mtp_time << "\n";
+   std::cout << "montgomery_pow_kary() time: " << mkp_time << "\n";
    std::cout << "normal call mf.pow() time: " << mfp_time << "\n";
    std::cout << "array[2]_montgomery_two_pow() time: " << mtp_time_2 << "\n";
    std::cout << "array[3]_montgomery_two_pow() time: " << mtp_time_3 << "\n";
@@ -345,7 +365,9 @@ void bench_range(U min, U range)
    std::cout << "array5 performance ratio = " << mtp_time / mtp_time_5 << "\n";
    std::cout << "array6 performance ratio = " << mtp_time / mtp_time_6 << "\n";
    std::cout << "array8 performance ratio = " << mtp_time / mtp_time_8 << "\n";
-   std::cout << "\narraykary performance ratio = " << mfpow_time / mpkary_time << "\n";
+   std::cout << "\narray[4]_montgomery_pow_kary() time: " << mpkary_time << "\n";
+   std::cout << "array[4]_mf.pow() time: " << mfpow_time << "\n";
+   std::cout << "arraykary performance ratio = " << mfpow_time / mpkary_time << "\n";
 
    std::cout << '\n';
 }

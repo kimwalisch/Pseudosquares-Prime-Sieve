@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022 Jeffrey Hurchalla.
+// Copyright (c) 2020-2025 Jeffrey Hurchalla.
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 
 #include "hurchalla/montgomery_arithmetic/detail/platform_specific/quarterrange_get_canonical.h"
 #include "hurchalla/montgomery_arithmetic/low_level_api/REDC.h"
-#include "hurchalla/montgomery_arithmetic/low_level_api/optimization_tag_structs.h"
+#include "hurchalla/modular_arithmetic/detail/optimization_tag_structs.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyCommonBase.h"
 #include "hurchalla/modular_arithmetic/modular_addition.h"
 #include "hurchalla/modular_arithmetic/modular_subtraction.h"
@@ -127,7 +127,7 @@ class MontyQuarterRange final : public
 
     HURCHALLA_FORCE_INLINE V negate(V x) const
     {
-        return subtract(BC::getZeroValue(), x);
+        return subtract(BC::getZeroValue(), x, LowuopsTag());
     }
 
     HURCHALLA_FORCE_INLINE C getCanonicalValue(V x) const
@@ -213,7 +213,8 @@ class MontyQuarterRange final : public
         return C(result);
     }
 
-    HURCHALLA_FORCE_INLINE V subtract(V x, V y) const
+    template <class PTAG>
+    HURCHALLA_FORCE_INLINE V subtract(V x, V y, PTAG) const
     {
         HPBC_PRECONDITION2(isValid(x));
         HPBC_PRECONDITION2(isValid(y));
@@ -228,14 +229,15 @@ class MontyQuarterRange final : public
         S sy = static_cast<S>(y.get());
         S sn2 = static_cast<S>(n2);
         namespace hc = ::hurchalla;
-        S moddiff = hc::modular_subtraction_prereduced_inputs(sx, sy, sn2);
+        S moddiff= hc::modular_subtraction_prereduced_inputs<S,PTAG>(sx,sy,sn2);
         HPBC_ASSERT2(moddiff >= 0);
         T result = static_cast<T>(moddiff);
         HPBC_POSTCONDITION2(result < n2);
         HPBC_POSTCONDITION2(isValid(V(result)));
         return V(result);
     }
-    HURCHALLA_FORCE_INLINE C subtract(C cx, C cy) const
+    template <class PTAG>
+    HURCHALLA_FORCE_INLINE C subtract(C cx, C cy, PTAG) const
     {
         HPBC_PRECONDITION2(cx.get() < n_);
         HPBC_PRECONDITION2(cy.get() < n_);
@@ -249,13 +251,14 @@ class MontyQuarterRange final : public
         S sy = static_cast<S>(cy.get());
         S sn = static_cast<S>(n_);
         namespace hc = ::hurchalla;
-        S moddiff = hc::modular_subtraction_prereduced_inputs(sx, sy, sn);
+        S moddiff = hc::modular_subtraction_prereduced_inputs<S,PTAG>(sx,sy,sn);
         HPBC_ASSERT2(moddiff >= 0);
         T result = static_cast<T>(moddiff);
         HPBC_POSTCONDITION2(result < n_);
         return C(result);
     }
-    // Note: subtract(C,V) and subtract(V,C) will match to subtract(V,V) above
+    // Note: subtract(C,V,PTAG) and subtract(V,C,PTAG) will match to
+    // subtract(V,V,PTAG) above
 
     HURCHALLA_FORCE_INLINE V unordered_subtract(V x, V y) const
     {
