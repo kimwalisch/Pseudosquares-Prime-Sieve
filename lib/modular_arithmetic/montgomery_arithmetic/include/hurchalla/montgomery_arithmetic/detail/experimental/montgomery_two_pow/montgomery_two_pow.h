@@ -355,7 +355,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
     int leading_zeros = count_leading_zeros(n);
     int numbits = ut_numeric_limits<decltype(n)>::digits - leading_zeros;
     // because we returned above if (n <= MASK), we can assert the following:
-    HPBC_ASSERT(numbits > P);
+    HPBC_ASSERT(numbits > static_cast<int>(P));
 
     int shift = numbits - static_cast<int>(P);
     U tmp = n >> shift;
@@ -385,7 +385,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
 
     if (shift == 0)
         return result;
-    HPBC_ASSERT(0 < shift && shift < P);
+    HPBC_ASSERT(0 < shift && shift < static_cast<int>(P));
 
     for (int i=0; i<shift; ++i)
         result = mf.square(result);
@@ -452,7 +452,7 @@ array_montgomery_two_pow(const std::array<MF, ARRAY_SIZE>& mf, const std::array<
     int leading_zeros = count_leading_zeros(n_max);
     int numbits = ut_numeric_limits<decltype(n_max)>::digits - leading_zeros;
     // because we returned above if (n_max <= MASK), we can assert the following:
-    HPBC_ASSERT(numbits > P);
+    HPBC_ASSERT(numbits > static_cast<int>(P));
 
     int shift = numbits - static_cast<int>(P);
     std::array<V, ARRAY_SIZE> result;
@@ -482,7 +482,7 @@ array_montgomery_two_pow(const std::array<MF, ARRAY_SIZE>& mf, const std::array<
 
     if (shift == 0)
         return result;
-    HPBC_ASSERT(0 < shift && shift < P);
+    HPBC_ASSERT(0 < shift && shift < static_cast<int>(P));
 
     for (int i=0; i<shift; ++i) {
         HURCHALLA_REQUEST_UNROLL_LOOP for (size_t j=0; j<ARRAY_SIZE; ++j)
