@@ -367,7 +367,7 @@ typename MF::MontgomeryValue montgomery_two_pow(const MF& mf, U n)
 
     while (shift >= static_cast<int>(P)) {
         if (USE_SLIDING_WINDOW_OPTIMIZATION) {
-            while (shift > P && (static_cast<size_t>(n >> (shift-1)) & 1) == 0) {
+            while (shift > static_cast<int>(P) && (static_cast<size_t>(n >> (shift-1)) & 1) == 0) {
                 result = mf.square(result);
                 --shift;
             }
