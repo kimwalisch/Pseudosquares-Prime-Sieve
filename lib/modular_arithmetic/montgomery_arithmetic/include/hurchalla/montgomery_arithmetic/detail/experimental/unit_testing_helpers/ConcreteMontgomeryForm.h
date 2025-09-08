@@ -28,6 +28,7 @@
 #include <array>
 #include <vector>
 #include <cstddef>
+#include <utility>
 
 namespace hurchalla {
 
@@ -48,24 +49,39 @@ private:
     using U = typename extensible_make_unsigned<T>::type;
 
     struct OpenV : public V {
+#ifndef _MSC_VER
         auto get() const -> decltype(V::get()) { return V::get(); }
         // for explanation of OT declaration, see
         // https://stackoverflow.com/questions/26435084/how-to-get-the-return-type-of-a-member-function-from-within-a-class
         using OT = decltype((std::declval<OpenV>().*std::declval<decltype(&OpenV::get)>())());
+#else
+        using OT = decltype((std::declval<V>().*std::declval<decltype(&V::get)>())());
+        OT get() const { return V::get(); }
+#endif
         OpenV() = default;
         explicit OpenV(OT a) : V(a) {}
         explicit OpenV(V x) : V(x) {}
     };
     struct OpenC : public C {
+#ifndef _MSC_VER
         auto get() const -> decltype(C::get()) { return C::get(); }
         using OT = decltype((std::declval<OpenC>().*std::declval<decltype(&OpenC::get)>())());
+#else
+        using OT = decltype((std::declval<C>().*std::declval<decltype(&C::get)>())());
+        OT get() const { return C::get(); }
+#endif
         OpenC() = default;
         explicit OpenC(OT a) : C(a) {}
         explicit OpenC(C x) : C(x) {}
     };
     struct OpenFV : public FV {
+#ifndef _MSC_VER
         auto get() const -> decltype(FV::get()) { return FV::get(); }
         using OT = decltype((std::declval<OpenFV>().*std::declval<decltype(&OpenFV::get)>())());
+#else
+        using OT = decltype((std::declval<FV>().*std::declval<decltype(&FV::get)>())());
+        OT get() const { return FV::get(); }
+#endif
         OpenFV() = default;
         explicit OpenFV(OT a) : FV(a) {}
         explicit OpenFV(FV x) : FV(x) {}
@@ -83,63 +99,78 @@ private:
 
 
     struct OpenMFV : public MFV {
+#ifndef _MSC_VER
         auto get() const -> decltype(MFV::get()) { return MFV::get(); }
         using OT = decltype((std::declval<OpenMFV>().*std::declval<decltype(&OpenMFV::get)>())());
+#else
+        using OT = decltype((std::declval<MFV>().*std::declval<decltype(&MFV::get)>())());
+        OT get() const { return MFV::get(); }
+#endif
         OpenMFV() = default;
         explicit OpenMFV(OT a) : MFV(a) {}
         explicit OpenMFV(MFV x) : MFV(x) {}
         explicit OpenMFV(OpenV x) : MFV(static_cast<OT>(x.get()))
         {
             static_assert(!ut_numeric_limits<typename OpenV::OT>::is_signed, "");
-            if (ut_numeric_limits<OT>::is_signed) {
+            if HURCHALLA_CPP17_CONSTEXPR (ut_numeric_limits<OT>::is_signed) {
                 using S = typename extensible_make_signed<typename OpenV::OT>::type;
                 S s = static_cast<S>(x.get());
-                HPBC_ASSERT2(ut_numeric_limits<OT>::min() <= s &&
+                HPBC_CLOCKWORK_ASSERT2(ut_numeric_limits<OT>::min() <= s &&
                               s <= ut_numeric_limits<OT>::max());
             } else {
-                HPBC_ASSERT2(0 <= x.get() && x.get() <= ut_numeric_limits<OT>::max());
+                HPBC_CLOCKWORK_ASSERT2(0 <= x.get() && x.get() <= ut_numeric_limits<OT>::max());
             }
             static_assert(static_cast<OT>(-1) ==
                 static_cast<OT>(static_cast<typename OpenV::OT>(static_cast<OT>(-1))), "");
         }
     };
     struct OpenMFC : public MFC {
+#ifndef _MSC_VER
         auto get() const -> decltype(MFC::get()) { return MFC::get(); }
         using OT = decltype((std::declval<OpenMFC>().*std::declval<decltype(&OpenMFC::get)>())());
+#else
+        using OT = decltype((std::declval<MFC>().*std::declval<decltype(&MFC::get)>())());
+        OT get() const { return MFC::get(); }
+#endif
         OpenMFC() = default;
         explicit OpenMFC(OT a) : MFC(a) {}
         explicit OpenMFC(MFC x) : MFC(x) {}
         explicit OpenMFC(OpenC x) : MFC(static_cast<OT>(x.get()))
         {
             static_assert(!ut_numeric_limits<typename OpenC::OT>::is_signed, "");
-            if (ut_numeric_limits<OT>::is_signed) {
+            if HURCHALLA_CPP17_CONSTEXPR (ut_numeric_limits<OT>::is_signed) {
                 using S = typename extensible_make_signed<typename OpenC::OT>::type;
                 S s = static_cast<S>(x.get());
-                HPBC_ASSERT2(ut_numeric_limits<OT>::min() <= s &&
+                HPBC_CLOCKWORK_ASSERT2(ut_numeric_limits<OT>::min() <= s &&
                               s <= ut_numeric_limits<OT>::max());
             } else {
-                HPBC_ASSERT2(0 <= x.get() && x.get() <= ut_numeric_limits<OT>::max());
+                HPBC_CLOCKWORK_ASSERT2(0 <= x.get() && x.get() <= ut_numeric_limits<OT>::max());
             }
             static_assert(static_cast<OT>(-1) ==
                 static_cast<OT>(static_cast<typename OpenC::OT>(static_cast<OT>(-1))), "");
         }
     };
     struct OpenMFFV : public MFFV {
+#ifndef _MSC_VER
         auto get() const -> decltype(MFFV::get()) { return MFFV::get(); }
         using OT = decltype((std::declval<OpenMFFV>().*std::declval<decltype(&OpenMFFV::get)>())());
+#else
+        using OT = decltype((std::declval<MFFV>().*std::declval<decltype(&MFFV::get)>())());
+        OT get() const { return MFFV::get(); }
+#endif
         OpenMFFV() = default;
         explicit OpenMFFV(OT a) : MFFV(a) {}
         explicit OpenMFFV(MFFV x) : MFFV(x) {}
         explicit OpenMFFV(OpenFV x) : MFFV(static_cast<OT>(x.get()))
         {
             static_assert(!ut_numeric_limits<typename OpenFV::OT>::is_signed, "");
-            if (ut_numeric_limits<OT>::is_signed) {
+            if HURCHALLA_CPP17_CONSTEXPR (ut_numeric_limits<OT>::is_signed) {
                 using S = typename extensible_make_signed<typename OpenFV::OT>::type;
                 S s = static_cast<S>(x.get());
-                HPBC_ASSERT2(ut_numeric_limits<OT>::min() <= s &&
+                HPBC_CLOCKWORK_ASSERT2(ut_numeric_limits<OT>::min() <= s &&
                               s <= ut_numeric_limits<OT>::max());
             } else {
-                HPBC_ASSERT2(0 <= x.get() && x.get() <= ut_numeric_limits<OT>::max());
+                HPBC_CLOCKWORK_ASSERT2(0 <= x.get() && x.get() <= ut_numeric_limits<OT>::max());
             }
             static_assert(static_cast<OT>(-1) ==
                 static_cast<OT>(static_cast<typename OpenFV::OT>(static_cast<OT>(-1))), "");
@@ -150,7 +181,7 @@ public:
 
     explicit ConcreteMontgomeryForm(T modulus) : mf(static_cast<MFT>(modulus))
     {
-        HPBC_PRECONDITION2(ut_numeric_limits<MFT>::min() <= modulus &&
+        HPBC_CLOCKWORK_PRECONDITION2(ut_numeric_limits<MFT>::min() <= modulus &&
                            modulus <= ut_numeric_limits<MFT>::max());
     }
 
@@ -174,7 +205,7 @@ public:
 
     virtual V convertIn(T a) const override
     {
-        HPBC_PRECONDITION2(0 <= a);
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= a);
         if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
             // kind of an unavoidable hack, so that AbstractMontgomeryForm has
             // the same contract for convertIn() as MongomeryForm, which allows
@@ -290,9 +321,49 @@ public:
         return OpenC(static_cast<typename OpenC::OT>(mfc.get()));
     }
 
+    virtual V two_times(V x) const override
+    {
+        OpenMFV mfv(mf.two_times(OpenMFV(OpenV(x))));
+        // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
+        return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
+    }
+
+    virtual C two_times(C x) const override
+    {
+        OpenMFC mfc(mf.two_times(OpenMFC(OpenC(x))));
+        // note: mfc.get() might be signed or unsigned; OpenC::OT is unsigned
+        return OpenC(static_cast<typename OpenC::OT>(mfc.get()));
+    }
+
+    virtual V two_pow(T exponent) const override
+    {
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= exponent);
+        if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
+            // kind of an unavoidable hack, so that AbstractMontgomeryForm has
+            // the same contract for two_pow() as MongomeryForm, which allows
+            // exponent to have any value of T >= 0.
+            static constexpr MFT mft_max = ut_numeric_limits<MFT>::max();
+            if (exponent > mft_max) {
+                MFV maxpow = mf.two_pow(mft_max);
+                MFV accum = mf.getUnityValue();
+                do {
+                    accum = mf.multiply(accum, maxpow);
+                    exponent -= mft_max;
+                } while (exponent > static_cast<T>(mft_max));
+                accum = mf.multiply(accum, mf.two_pow(static_cast<MFT>(exponent)));
+                OpenMFV result(accum);
+                // note: result.get() might be signed or unsigned; OpenV::OT is unsigned
+                return OpenV(static_cast<typename OpenV::OT>(result.get()));
+            }
+        }
+        OpenMFV mfv(mf.two_pow(static_cast<MFT>(exponent)));
+        // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
+        return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
+    }
+
     virtual V pow(V base, T exponent) const override
     {
-        HPBC_PRECONDITION2(0 <= exponent);
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= exponent);
         if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
             // kind of an unavoidable hack, so that AbstractMontgomeryForm has
             // the same contract for pow() as MongomeryForm, which allows
@@ -319,7 +390,7 @@ public:
 
     virtual T remainder(T a) const override
     {
-        HPBC_PRECONDITION2(0 <= a);
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= a);
         if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
             // kind of an unavoidable hack, so that AbstractMontgomeryForm has
             // the same contract for remainder() as MongomeryForm, which allows
@@ -529,6 +600,20 @@ private:
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
     }
 
+    virtual C inverse(V x, bool useLowlatencyTag) const override
+    {
+        OpenMFC mfc;
+        if (useLowlatencyTag) {
+            OpenMFC mfc2(mf.template inverse<LowlatencyTag>(OpenMFV(OpenV(x))));
+            mfc = mfc2;
+        } else {
+            OpenMFC mfc2(mf.template inverse<LowuopsTag>(OpenMFV(OpenV(x))));
+            mfc = mfc2;
+        }
+        // note: mfc.get() might be signed or unsigned; OpenC::OT is unsigned
+        return OpenC(static_cast<typename OpenC::OT>(mfc.get()));
+    }
+
 
     // This class (ConcreteMontgomeryForm) only supports calling vectorPow()
     // with a std::vector that has size equal to one of the sizes given by the
@@ -560,7 +645,7 @@ private:
     static void fixed_size_vector_pow(const MF& mf,
         const std::vector<V>& bases, T exponent, std::vector<V>& answers)
     {
-        HPBC_ASSERT(bases.size() == A);   // if this fails, it is because
+        HPBC_CLOCKWORK_ASSERT(bases.size() == A);   // if this fails, it is because
         // ConcreteMontgomeryForm was constructed with template variadic size_t
         // argument POW_ARRAY_SIZES that did not include the size of bases (as
         // used in this run-time assertion).
@@ -639,13 +724,13 @@ private:
         {
             static_assert(ut_numeric_limits<T1>::is_integer, "");
             static_assert(!ut_numeric_limits<T1>::is_signed, "");
-            HPBC_PRECONDITION2(a > 0 || b > 0);
+            HPBC_CLOCKWORK_PRECONDITION2(a > 0 || b > 0);
             while (a != 0) {
                 T1 tmp = a;
                 a = static_cast<T1>(b % a);
                 b = tmp;
             }
-            HPBC_POSTCONDITION2(b > 0);
+            HPBC_CLOCKWORK_POSTCONDITION2(b > 0);
             return b;
         }
     };

@@ -11,22 +11,19 @@
 
 #include "hurchalla/montgomery_arithmetic/detail/ImplMontgomeryForm.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontgomeryDefault.h"
+#include "hurchalla/montgomery_arithmetic/detail/MontgomeryFormExtensions.h"
 #include "hurchalla/montgomery_arithmetic/detail/platform_specific/montgomery_pow.h"
+#include "hurchalla/montgomery_arithmetic/detail/platform_specific/montgomery_two_pow.h"
 #include "hurchalla/modular_arithmetic/detail/optimization_tag_structs.h"
 #include "hurchalla/util/traits/is_equality_comparable.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
-#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <type_traits>
 #include <array>
 #include <cstddef>
 
 namespace hurchalla {
-
-
-#ifndef HURCHALLA_TARGET_BIT_WIDTH
-#  error "HURCHALLA_TARGET_BIT_WIDTH must be defined"
-#endif
 
 
 // T must be a signed or unsigned integral type.
@@ -41,8 +38,13 @@ template <class T,
           bool InlineAll = (ut_numeric_limits<T>::digits <= HURCHALLA_TARGET_BIT_WIDTH),
           class MontyType = typename detail::MontgomeryDefault<T>::type>
 class MontgomeryForm final {
-    static_assert(ut_numeric_limits<T>::is_integer, "");
     const detail::ImplMontgomeryForm<T, InlineAll, MontyType> impl;
+    template <class,class> friend struct detail::MontgomeryFormExtensions;
+    static_assert(ut_numeric_limits<T>::is_integer, "");
+    static_assert(ut_numeric_limits<T>::digits <=
+                  ut_numeric_limits<typename MontyType::uint_type>::digits, "");
+    using SV = typename MontyType::squaringvalue_type;
+    using RU = typename MontyType::uint_type;
 public:
     using IntegerType = T;
     using MontyTag = typename MontyType::MontyTag;
@@ -77,12 +79,14 @@ public:
 
     explicit MontgomeryForm(T modulus) : impl(modulus)
     {
-        // Usually odd modulus is required, but since MontyWrappedStandardMath
-        // is an exception to the rule, we do not require odd modulus here.
-        // We leave it to the constructor of the MontyType member (impl) to
-        // enforce the requirement of an odd modulus, if applicable.
-        //HPBC_PRECONDITION(modulus % 2 == 1);
-        HPBC_PRECONDITION(modulus > 1);
+        // Precondition: modulus must be odd.
+        // [note: there is a rare exception to this rule - when the MontyType is
+        // MontyWrappedStandardMath the modulus can be odd or even, since that
+        // type doesn't actually do Montgomery arithmetic.  However, to maintain
+        // compatibility with the normal MontyTypes, it's recommended to always
+        // use an odd modulus even in that case.]
+        //HPBC_CLOCKWORK_API_PRECONDITION(modulus % 2 == 1);
+        HPBC_CLOCKWORK_API_PRECONDITION(modulus > 1);
     }
 
     // Returns the largest valid modulus allowed for the constructor.
@@ -110,7 +114,7 @@ public:
     HURCHALLA_FORCE_INLINE
     MontgomeryValue convertIn(T a) const
     {
-        HPBC_PRECONDITION(a >= 0);
+        HPBC_CLOCKWORK_API_PRECONDITION(a >= 0);
         return impl.convertIn(a);
     }
 
@@ -120,7 +124,7 @@ public:
     T convertOut(MontgomeryValue x) const
     {
         T a = impl.convertOut(x);
-        HPBC_POSTCONDITION(0 <= a && a < getModulus());
+        HPBC_CLOCKWORK_POSTCONDITION(0 <= a && a < getModulus());
         return a;
     }
 
@@ -159,7 +163,7 @@ public:
         return impl.getZeroValue();
     }
     // Returns the canonical monty value that represents the type T value
-    // modulus-1 (which equals -1 (mod modulus)).  The call is equivalent to
+    // modulus-1 (which equals -1 (mod modulus)).  This call is equivalent to
     // getCanonicalValue(convertIn(static_cast<T>(modulus - 1))), but it's more
     // efficient (essentially zero cost) and more convenient.
     HURCHALLA_FORCE_INLINE
@@ -200,7 +204,7 @@ public:
     MontgomeryValue add(MontgomeryValue x, CanonicalValue y) const
     {
         MontgomeryValue ret = impl.add(x, y);
-        HPBC_ASSERT(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_ASSERT(getCanonicalValue(ret) ==
                     getCanonicalValue(add(x, static_cast<MontgomeryValue>(y))));
         return ret;
     }
@@ -208,16 +212,17 @@ public:
     MontgomeryValue add(CanonicalValue x, MontgomeryValue y) const
     {
         MontgomeryValue ret = impl.add(x, y);
-        HPBC_ASSERT(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_ASSERT(getCanonicalValue(ret) ==
                     getCanonicalValue(add(static_cast<MontgomeryValue>(x), y)));
         return ret;
     }
     // Adding CanonicalValues can be more efficient than the above functions
+    // for some MontyTypes (specifically for MontyHalfRange).
     HURCHALLA_FORCE_INLINE
     CanonicalValue add(CanonicalValue x, CanonicalValue y) const
     {
         CanonicalValue ret = impl.add(x, y);
-        HPBC_ASSERT(ret == getCanonicalValue(add(
+        HPBC_CLOCKWORK_ASSERT(ret == getCanonicalValue(add(
             static_cast<MontgomeryValue>(x), static_cast<MontgomeryValue>(y))));
         return ret;
     }
@@ -244,7 +249,7 @@ public:
     MontgomeryValue subtract(MontgomeryValue x, CanonicalValue y) const
     {
         MontgomeryValue ret = impl.template subtract<PTAG>(x, y);
-        HPBC_ASSERT(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_ASSERT(getCanonicalValue(ret) ==
                getCanonicalValue(subtract(x, static_cast<MontgomeryValue>(y))));
         return ret;
     }
@@ -252,7 +257,7 @@ public:
     MontgomeryValue subtract(CanonicalValue x, MontgomeryValue y) const
     {
         MontgomeryValue ret = impl.template subtract<PTAG>(x, y);
-        HPBC_ASSERT(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_ASSERT(getCanonicalValue(ret) ==
                getCanonicalValue(subtract(static_cast<MontgomeryValue>(x), y)));
         return ret;
     }
@@ -261,7 +266,7 @@ public:
     CanonicalValue subtract(CanonicalValue x, CanonicalValue y) const
     {
         CanonicalValue ret = impl.template subtract<PTAG>(x, y);
-        HPBC_ASSERT(ret == getCanonicalValue(subtract(
+        HPBC_CLOCKWORK_ASSERT(ret == getCanonicalValue(subtract(
             static_cast<MontgomeryValue>(x), static_cast<MontgomeryValue>(y))));
         return ret;
     }
@@ -303,6 +308,25 @@ public:
         return impl.negate(x);
     }
 
+    // Returns the modular sum of x plus itself.
+    // The call is equivalent to sum(x, x) but it's slightly more efficient for
+    // some Monty types.  It is never less efficient.
+    HURCHALLA_FORCE_INLINE
+    MontgomeryValue two_times(MontgomeryValue x) const
+    {
+        MontgomeryValue ret = impl.two_times(x);
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
+                           getCanonicalValue(add(x, x)));
+        return ret;
+    }
+    HURCHALLA_FORCE_INLINE
+    CanonicalValue two_times(CanonicalValue x) const
+    {
+        CanonicalValue ret = impl.two_times(x);
+        HPBC_CLOCKWORK_POSTCONDITION(ret == add(x, x));
+        return ret;
+    }
+
 
     // Returns the modular product of (the montgomery values) x and y.
     // Performance note: when calling this function and deciding which variable
@@ -331,7 +355,7 @@ public:
                                                        bool& resultIsZero) const
     {
         MontgomeryValue ret = impl.template multiply<PTAG>(x, y, resultIsZero);
-        HPBC_POSTCONDITION(resultIsZero ==
+        HPBC_CLOCKWORK_POSTCONDITION(resultIsZero ==
                                       (getCanonicalValue(ret)==getZeroValue()));
         return ret;
     }
@@ -354,7 +378,7 @@ public:
                                                          CanonicalValue z) const
     {
         MontgomeryValue ret = impl.template fmsub<PTAG>(x, y, z);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
                                 getCanonicalValue(subtract(multiply(x, y), z)));
         return ret;
     }
@@ -373,7 +397,7 @@ public:
                                                             FusingValue z) const
     {
         MontgomeryValue ret = impl.template fmsub<PTAG>(x, y, z);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
                                 getCanonicalValue(subtract(multiply(x, y), z)));
         return ret;
     }
@@ -398,7 +422,7 @@ public:
                                                          CanonicalValue z) const
     {
         MontgomeryValue ret = impl.template fmadd<PTAG>(x, y, z);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
                                      getCanonicalValue(add(multiply(x, y), z)));
         return ret;
     }
@@ -412,7 +436,7 @@ public:
                                                             FusingValue z) const
     {
         MontgomeryValue ret = impl.template fmadd<PTAG>(x, y, z);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
                                      getCanonicalValue(add(multiply(x, y), z)));
         return ret;
     }
@@ -426,7 +450,7 @@ public:
     MontgomeryValue square(MontgomeryValue x) const
     {
         MontgomeryValue ret = impl.template square<PTAG>(x);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) == getCanonicalValue(
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) == getCanonicalValue(
                                                                multiply(x, x)));
         return ret;
     }
@@ -436,7 +460,7 @@ public:
     MontgomeryValue fusedSquareSub(MontgomeryValue x, CanonicalValue cv) const
     {
         MontgomeryValue ret = impl.template fusedSquareSub<PTAG>(x, cv);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
                                getCanonicalValue(subtract(multiply(x, x), cv)));
         return ret;
     }
@@ -446,7 +470,7 @@ public:
     MontgomeryValue fusedSquareAdd(MontgomeryValue x, CanonicalValue cv) const
     {
         MontgomeryValue ret = impl.template fusedSquareAdd<PTAG>(x, cv);
-        HPBC_POSTCONDITION(getCanonicalValue(ret) ==
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
                                     getCanonicalValue(add(multiply(x, x), cv)));
         return ret;
     }
@@ -454,15 +478,31 @@ public:
 
     // Calculates and returns the modular exponentiation of the montgomery value
     // 'base' to the power of (the type T variable) 'exponent'.
+    // Performance note: if your base is 2, two_pow() is much more efficient.
     HURCHALLA_FORCE_INLINE
     MontgomeryValue pow(MontgomeryValue base, T exponent) const
     {
-        HPBC_PRECONDITION(exponent >= 0);
+        HPBC_CLOCKWORK_API_PRECONDITION(exponent >= 0);
         std::array<MontgomeryValue, 1> bases = {{ base }};
         std::array<MontgomeryValue, 1> result =
                 detail::montgomery_array_pow<MontyTag,
                                    MontgomeryForm>::pow(*this, bases, exponent);
         return result[0];
+        //return detail::montgomery_pow<MontgomeryForm>::scalarpow(*this, base, exponent);
+    }
+
+    // Calculates and returns the modular exponentiation of 2 (converted into a
+    // MontgomeryValue) raised to the power of (the type T variable) 'exponent'.
+    // Performance note: this function is usually much faster than calling pow()
+    // with a base of 2.
+    HURCHALLA_FORCE_INLINE
+    MontgomeryValue two_pow(T exponent) const
+    {
+        HPBC_CLOCKWORK_API_PRECONDITION(exponent >= 0);
+        MontgomeryValue ret = detail::montgomery_two_pow::call(*this, exponent);
+        HPBC_CLOCKWORK_POSTCONDITION(getCanonicalValue(ret) ==
+                                getCanonicalValue(pow(convertIn(2), exponent)));
+        return ret;
     }
 
     // This is a specially optimized version of the pow() function above.
@@ -490,9 +530,31 @@ public:
     std::array<MontgomeryValue, NUM_BASES>
     pow(const std::array<MontgomeryValue, NUM_BASES>& bases, T exponent) const
     {
-        HPBC_PRECONDITION(exponent >= 0);
+        HPBC_CLOCKWORK_API_PRECONDITION(exponent >= 0);
         return detail::montgomery_array_pow<MontyTag,
                                    MontgomeryForm>::pow(*this, bases, exponent);
+    }
+
+
+    // Returns the multiplicative inverse of 'x' in the Montgomery domain if
+    // the inverse exists. If the inverse does not exist, it returns zero (or
+    // more precisely, it returns the value equal to getZeroValue()).
+    // This is a convenience function to stay in the Montgomery domain when you
+    // want to find the multiplicative inverse of a MontgomeryValue.
+    //
+    // Performance note: this function has no performance advantage over
+    // hurchalla::modular_multiplicative_inverse if you need the inverse of a
+    // number in standard integer domain - i.e. don't convert into Montgomery
+    // domain just to call this function. However, when you intend to stay in
+    // the Montgomery domain, this function is the fastest way to get the
+    // multiplicative inverse.
+    template <class PTAG = LowlatencyTag> HURCHALLA_FORCE_INLINE
+    CanonicalValue inverse(MontgomeryValue x) const
+    {
+        CanonicalValue ret = impl.template inverse<PTAG>(x);
+        HPBC_CLOCKWORK_POSTCONDITION(ret == getZeroValue() ||
+                        getCanonicalValue(multiply(x, ret)) == getUnityValue());
+        return ret;
     }
 
 
@@ -519,9 +581,10 @@ public:
     // even if your CPU has extremely fast division (like many new CPUs).
     HURCHALLA_FORCE_INLINE T remainder(T a) const
     {
-        HPBC_PRECONDITION(a >= 0);
+        HPBC_CLOCKWORK_API_PRECONDITION(a >= 0);
         return impl.remainder(a);
     }
+
 };
 
 

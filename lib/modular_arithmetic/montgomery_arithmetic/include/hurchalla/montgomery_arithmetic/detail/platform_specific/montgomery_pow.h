@@ -11,10 +11,11 @@
 
 #include "hurchalla/modular_arithmetic/detail/optimization_tag_structs.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyQuarterRange.h"
+#include "hurchalla/montgomery_arithmetic/detail/MontyHalfRange.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/Unroll.h"
 #include "hurchalla/util/compiler_macros.h"
-#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <array>
 #include <cstddef>
 #include <type_traits>
@@ -35,14 +36,16 @@ struct montgomery_pow {
 
   static HURCHALLA_FORCE_INLINE V scalarpow(const MF& mf, V base, T exponent)
   {
-    HPBC_PRECONDITION(exponent >= 0);
+    HPBC_CLOCKWORK_PRECONDITION(exponent >= 0);
     // This is an optimized version of Algorithm 14.76, from
     // Applied Handbook of Cryptography- http://cacr.uwaterloo.ca/hac/
     // See also: hurchalla/modular_arithmetic/detail/impl_modular_pow.h
-    V result = (exponent & static_cast<T>(1)) ? base : mf.getUnityValue();
+    V mont_one = mf.getUnityValue();
+    V result = (exponent & static_cast<T>(1)) ? base : mont_one;
     while (exponent > static_cast<T>(1)) {
         exponent = static_cast<T>(exponent >> static_cast<T>(1));
-        base = mf.template square<LowuopsTag>(base);
+        base = mf.template square<LowlatencyTag>(base);
+#if 0
         // The square above is a loop carried dependency.  Thus, a second loop
         // carried dependency with the same length can be essentially free due
         // to instruction level parallelism, so long as it does not introduce
@@ -54,8 +57,18 @@ struct montgomery_pow {
         // dependency depends upon both multiply and a conditional move, whereas
         // 'base' above depends only on square (multiply) and thus is tagged for
         // lowuops since it is less likely to be a latency bottleneck.
+
         V tmp = mf.template multiply<LowlatencyTag>(result, base);
         result.cmov(exponent & static_cast<T>(1), tmp);
+#else
+        // This section shortens the dependency chain for 'result'.  Since
+        // 'result' had a longer dependency chain above than 'base' did, this
+        // in theory should run faster.  An in practice it has consistently
+        // benchmarked better - usually ~5% faster, and never slower than above.
+        V tmp = mont_one;
+        tmp.cmov(exponent & static_cast<T>(1), base);
+        result = mf.template multiply<LowlatencyTag>(result, tmp);
+#endif
     }
     return result;
   }
@@ -65,9 +78,9 @@ struct montgomery_pow {
   // level parallelism, compared to the non-array montgomery_pow function.
   // They use the same algorithm as the non-array montgomery_pow().  They
   // require an array of bases, of which each element is modularly exponentiated
-  // to the same power and returned as an array.  At least one application is
-  // miller-rabin primality testing, since it needs to raise multiple bases to
-  // the same power.
+  // to the same power and returned as an array.  An example application where
+  // array pow can be useful is miller-rabin primality testing, since it needs
+  // to raise multiple bases to the same power.
   // These array version functions should all be equivalent to one another,
   // aside from their differences in performance.
   // --------
@@ -78,12 +91,13 @@ struct montgomery_pow {
   // providing the best performance when NUM_BASES gets huge (roughly values of
   // NUM_BASES > 50, though note that such situations are probably unusual in
   // practice, given that even having NUM_BASES > 1 could be considered a
-  // special case for pow).
+  // special case for pow).  The best reason to use this version is likely to be
+  // to avoid code bloat - when it has very little performance justification.
   template <std::size_t NUM_BASES>
   static HURCHALLA_FORCE_INLINE std::array<V, NUM_BASES>
   arraypow_cond_branch(const MF& mf, std::array<V, NUM_BASES> bases, T exponent)
   {
-    HPBC_PRECONDITION(exponent >= 0);
+    HPBC_CLOCKWORK_PRECONDITION(exponent >= 0);
     std::array<V, NUM_BASES> result;
     if (exponent & static_cast<T>(1)) {
         for (std::size_t i=0; i<NUM_BASES; ++i)
@@ -110,7 +124,7 @@ struct montgomery_pow {
   arraypow_cond_branch_unrolled(const MF& mf, std::array<V, NUM_BASES> bases,
                                                                      T exponent)
   {
-    HPBC_PRECONDITION(exponent >= 0);
+    HPBC_CLOCKWORK_PRECONDITION(exponent >= 0);
     std::array<V, NUM_BASES> result;
     if (exponent & static_cast<T>(1)) {
         Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
@@ -140,7 +154,7 @@ struct montgomery_pow {
   static HURCHALLA_FORCE_INLINE std::array<V, NUM_BASES>
   arraypow_cmov(const MF& mf, std::array<V, NUM_BASES> bases, T exponent)
   {
-    HPBC_PRECONDITION(exponent >= 0);
+    HPBC_CLOCKWORK_PRECONDITION(exponent >= 0);
     std::array<V, NUM_BASES> result;
     if (exponent & static_cast<T>(1)) {
         Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
@@ -154,7 +168,9 @@ struct montgomery_pow {
     }
     while (exponent > static_cast<T>(1)) {
         exponent = static_cast<T>(exponent >> static_cast<T>(1));
+#if 0
         std::array<V, NUM_BASES> tmp;
+
         Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
             bases[i] = mf.template square<LowuopsTag>(bases[i]);
             tmp[i] = mf.template multiply<LowuopsTag>(result[i], bases[i]);
@@ -162,6 +178,22 @@ struct montgomery_pow {
         Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
             result[i].cmov(exponent & static_cast<T>(1), tmp[i]);
         });
+#else
+        // see scalarpow)() comments for why this #else section might be
+        // preferable to the #if alternative above.  There's probably little
+        // difference at larger NUM_BASES though, where total uops is the
+        // bottleneck rather than dependency chain length.
+        Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
+            bases[i] = mf.template square<LowuopsTag>(bases[i]);
+        });
+
+        V mont_one = mf.getUnityValue();
+        Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
+            V tmp = mont_one;
+            tmp.cmov(exponent & static_cast<T>(1), bases[i]);
+            result[i] = mf.template multiply<LowlatencyTag>(result[i], tmp);
+        });
+#endif
     }
     return result;
   }
@@ -170,7 +202,7 @@ struct montgomery_pow {
   static HURCHALLA_FORCE_INLINE std::array<V, NUM_BASES>
   arraypow_masked(const MF& mf, std::array<V, NUM_BASES> bases, T exponent)
   {
-    HPBC_PRECONDITION(exponent >= 0);
+    HPBC_CLOCKWORK_PRECONDITION(exponent >= 0);
     std::array<V, NUM_BASES> result;
     if (exponent & static_cast<T>(1)) {
         Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
@@ -184,12 +216,24 @@ struct montgomery_pow {
     }
     while (exponent > static_cast<T>(1)) {
         exponent = static_cast<T>(exponent >> 1u);
+#if 0
         Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
             bases[i] = mf.template square<LowuopsTag>(bases[i]);
             V tmp = mf.template multiply<LowuopsTag>(result[i], bases[i]);
             result[i].template
                       cmov<CSelectMaskedTag>(exponent & static_cast<T>(1), tmp);
         });
+#else
+        // the comments in arraypow_cmov() apply equally in this section
+        V mont_one = mf.getUnityValue();
+        Unroll<NUM_BASES>::call([&](std::size_t i) HURCHALLA_INLINE_LAMBDA {
+            bases[i] = mf.template square<LowuopsTag>(bases[i]);
+            V tmp = mont_one;
+            tmp.template
+                 cmov<CSelectMaskedTag>(exponent & static_cast<T>(1), bases[i]);
+            result[i] = mf.template multiply<LowlatencyTag>(result[i], tmp);
+        });
+#endif
     }
     return result;
   }

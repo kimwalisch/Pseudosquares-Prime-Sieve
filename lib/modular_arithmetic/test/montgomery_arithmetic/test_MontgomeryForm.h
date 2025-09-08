@@ -5,19 +5,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#ifndef HURCHALLA_TEST_MONTGOMERY_FORM_H_INCLUDED
+#define HURCHALLA_TEST_MONTGOMERY_FORM_H_INCLUDED
+
 
 // Strictly for testing purposes, we'll define HURCHALLA_ALLOW_INLINE_ASM_ALL,
 // which will cause MontgomeryForm to use all helper inline asm functions that
 // are available.  Internally, these inline asm functions will also call their
 // corresponding generic template helper functions inside a postcondition, in
 // order to make sure that the asm result is correct.  Of course postcondition
+
 // checks must be enabled for this check to occur - the easiest way to ensure
-// postconditions are enabled is to undefine NDEBUG, which is why we undef
-// NDEBUG here too.
+// postconditions are enabled is to define HURCHALLA_CLOCKWORK_ENABLE_ASSERTS,
+// which is why we do so here.  This is all strictly for testing purposes.
 #undef HURCHALLA_ALLOW_INLINE_ASM_ALL
 #define HURCHALLA_ALLOW_INLINE_ASM_ALL 1
 
-#undef NDEBUG
+#ifndef HURCHALLA_CLOCKWORK_ENABLE_ASSERTS
+#  define HURCHALLA_CLOCKWORK_ENABLE_ASSERTS
+#endif
 
 
 #include "hurchalla/modular_arithmetic/modular_multiplication.h"
@@ -28,7 +34,7 @@
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/compiler_macros.h"
-#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include "gtest/gtest.h"
 #include <cstdint>
 #include <type_traits>
@@ -54,15 +60,15 @@ namespace testmf_adapters {
     T modadd(T a, T b, T modulus)
     {
         static_assert(hc::ut_numeric_limits<T>::is_integer, "");
-        HPBC_PRECONDITION(0 <= a && a < modulus);
-        HPBC_PRECONDITION(0 <= b && b < modulus);
-        HPBC_PRECONDITION(modulus > 1);
+        HPBC_CLOCKWORK_PRECONDITION(0 <= a && a < modulus);
+        HPBC_CLOCKWORK_PRECONDITION(0 <= b && b < modulus);
+        HPBC_CLOCKWORK_PRECONDITION(modulus > 1);
 
         using U = typename hc::extensible_make_unsigned<T>::type;
         T result = static_cast<T>(hc::modular_addition_prereduced_inputs(
                 static_cast<U>(a), static_cast<U>(b), static_cast<U>(modulus)));
 
-        HPBC_POSTCONDITION(0 <= result && result < modulus);
+        HPBC_CLOCKWORK_POSTCONDITION(0 <= result && result < modulus);
         return result;
     }
 
@@ -70,15 +76,15 @@ namespace testmf_adapters {
     T modsub(T a, T b, T modulus)
     {
         static_assert(hc::ut_numeric_limits<T>::is_integer, "");
-        HPBC_PRECONDITION(0 <= a && a < modulus);
-        HPBC_PRECONDITION(0 <= b && b < modulus);
-        HPBC_PRECONDITION(modulus > 1);
+        HPBC_CLOCKWORK_PRECONDITION(0 <= a && a < modulus);
+        HPBC_CLOCKWORK_PRECONDITION(0 <= b && b < modulus);
+        HPBC_CLOCKWORK_PRECONDITION(modulus > 1);
 
         using U = typename hc::extensible_make_unsigned<T>::type;
         T result = static_cast<T>(hc::modular_subtraction_prereduced_inputs(
                 static_cast<U>(a), static_cast<U>(b), static_cast<U>(modulus)));
 
-        HPBC_POSTCONDITION(0 <= result && result < modulus);
+        HPBC_CLOCKWORK_POSTCONDITION(0 <= result && result < modulus);
         return result;
     }
 
@@ -86,15 +92,15 @@ namespace testmf_adapters {
     T modmul(T a, T b, T modulus)
     {
         static_assert(hc::ut_numeric_limits<T>::is_integer, "");
-        HPBC_PRECONDITION(0 <= a && a < modulus);
-        HPBC_PRECONDITION(0 <= b && b < modulus);
-        HPBC_PRECONDITION(modulus > 1);
+        HPBC_CLOCKWORK_PRECONDITION(0 <= a && a < modulus);
+        HPBC_CLOCKWORK_PRECONDITION(0 <= b && b < modulus);
+        HPBC_CLOCKWORK_PRECONDITION(modulus > 1);
 
         using U = typename hc::extensible_make_unsigned<T>::type;
         T result = static_cast<T>(hc::modular_multiplication_prereduced_inputs(
                 static_cast<U>(a), static_cast<U>(b), static_cast<U>(modulus)));
 
-        HPBC_POSTCONDITION(0 <= result && result < modulus);
+        HPBC_CLOCKWORK_POSTCONDITION(0 <= result && result < modulus);
         return result;
     }
 
@@ -102,15 +108,15 @@ namespace testmf_adapters {
     T modpow(T base, T exponent, T modulus)
     {
         static_assert(hc::ut_numeric_limits<T>::is_integer, "");
-        HPBC_PRECONDITION(base >= 0);
-        HPBC_PRECONDITION(exponent >= 0);
-        HPBC_PRECONDITION(modulus > 1);
+        HPBC_CLOCKWORK_PRECONDITION(base >= 0);
+        HPBC_CLOCKWORK_PRECONDITION(exponent >= 0);
+        HPBC_CLOCKWORK_PRECONDITION(modulus > 1);
 
         using U = typename hc::extensible_make_unsigned<T>::type;
         T result = static_cast<T>(hc::modular_pow(static_cast<U>(base),
                             static_cast<U>(exponent), static_cast<U>(modulus)));
 
-        HPBC_POSTCONDITION(0 <= result && result < modulus);
+        HPBC_CLOCKWORK_POSTCONDITION(0 <= result && result < modulus);
         return result;
     }
 }
@@ -124,13 +130,13 @@ struct GcdFunctor {
         namespace hc = ::hurchalla;
         static_assert(hc::ut_numeric_limits<T>::is_integer, "");
         static_assert(!hc::ut_numeric_limits<T>::is_signed, "");
-        HPBC_PRECONDITION2(a > 0 || b > 0);
+        HPBC_CLOCKWORK_PRECONDITION2(a > 0 || b > 0);
         while (a != 0) {
             T tmp = a;
             a = static_cast<T>(b % a);
             b = tmp;
         }
-        HPBC_POSTCONDITION2(b > 0);
+        HPBC_CLOCKWORK_POSTCONDITION2(b > 0);
         return b;
     }
 };
@@ -288,6 +294,40 @@ void test_remainder(const M& mf)
 }
 
 template <typename M>
+void test_single_inverse(const M& mf, typename M::IntegerType a)
+{
+    namespace hc = ::hurchalla;
+    using T = typename M::IntegerType;
+    using U = typename hc::extensible_make_unsigned<T>::type;
+
+    U n = static_cast<U>(mf.getModulus());
+    U gcd;  // ignored
+    auto answer = hc::modular_multiplicative_inverse(static_cast<U>(a), n, gcd);
+    U val = static_cast<U>(mf.convertOut(mf.inverse(mf.convertIn(a))));
+    EXPECT_TRUE(val == answer);
+}
+
+template <typename M>
+void test_inverse(const M& mf)
+{
+    using T = typename M::IntegerType;
+    T max = ::hurchalla::ut_numeric_limits<T>::max();
+    T mid = static_cast<T>(max/2);
+    T modulus = mf.getModulus();
+    test_single_inverse(mf, static_cast<T>(0));
+    test_single_inverse(mf, static_cast<T>(1));
+    test_single_inverse(mf, static_cast<T>(2));
+    test_single_inverse(mf, static_cast<T>(max-0));
+    test_single_inverse(mf, static_cast<T>(max-1));
+    test_single_inverse(mf, static_cast<T>(mid-0));
+    test_single_inverse(mf, static_cast<T>(mid-1));
+    test_single_inverse(mf, static_cast<T>(modulus-1));
+    test_single_inverse(mf, static_cast<T>(modulus-2));
+    test_single_inverse(mf, static_cast<T>(modulus/2));
+    test_single_inverse(mf, static_cast<T>((modulus/2) - 1));
+}
+
+template <typename M>
 void test_mf_general_checks(const M& mf, typename M::IntegerType a,
                            typename M::IntegerType b, typename M::IntegerType c)
 {
@@ -330,6 +370,17 @@ void test_mf_general_checks(const M& mf, typename M::IntegerType a,
     EXPECT_TRUE(mf.getCanonicalValue(mf.add(x,yc)) ==
                              mf.getCanonicalValue(mf.convertIn(reference_sum)));
 
+    T reference_two_a = tma::modadd(a, a, modulus);
+    T reference_two_b = tma::modadd(b, b, modulus);
+    EXPECT_TRUE(mf.convertOut(mf.two_times(x)) == reference_two_a);
+    EXPECT_TRUE(mf.convertOut(mf.two_times(xc)) == reference_two_a);
+    EXPECT_TRUE(mf.convertOut(mf.two_times(y)) == reference_two_b);
+    EXPECT_TRUE(mf.convertOut(mf.two_times(yc)) == reference_two_b);
+    EXPECT_TRUE(mf.getCanonicalValue(mf.two_times(x)) ==
+                           mf.getCanonicalValue(mf.convertIn(reference_two_a)));
+    EXPECT_TRUE(mf.getCanonicalValue(mf.two_times(xc)) ==
+                           mf.getCanonicalValue(mf.convertIn(reference_two_a)));
+
     T diff1 = tma::modsub(b, a, modulus);
     test_subtract_variants(mf, y, x, diff1);
     T diff2 = tma::modsub(a, b, modulus);
@@ -363,6 +414,12 @@ void test_mf_general_checks(const M& mf, typename M::IntegerType a,
 
     test_square_variants(mf, x, zc);
     test_square_variants(mf, y, zc);
+
+    EXPECT_TRUE(mf.convertOut(mf.two_pow(0)) == 1);
+    EXPECT_TRUE(mf.convertOut(mf.two_pow(1)) == 2);
+    EXPECT_TRUE(mf.convertOut(mf.two_pow(3)) == tma::modpow<T>(2,3,modulus));
+    EXPECT_TRUE(mf.convertOut(mf.two_pow(11)) == tma::modpow<T>(2,11,modulus));
+    EXPECT_TRUE(mf.convertOut(mf.two_pow(127)) == tma::modpow<T>(2,127,modulus));
 
     EXPECT_TRUE(mf.convertOut(mf.pow(y,0)) == 1);
     EXPECT_TRUE(mf.convertOut(mf.pow(y,1)) == b);
@@ -459,6 +516,10 @@ void test_MontgomeryForm()
         EXPECT_TRUE(mf.convertOut(mf.add(y,x)) == 4);
         EXPECT_TRUE(mf.convertOut(mf.add(x,yc)) == 4);
         EXPECT_TRUE(mf.convertOut(mf.add(y,xc)) == 4);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(x)) == 12);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(xc)) == 12);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(y)) == 9);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(yc)) == 9);
         test_subtract_variants(mf, y, x, 5);
         test_subtract_variants(mf, x, y, 8);
         T us = mf.convertOut(mf.unorderedSubtract(x,y));
@@ -469,6 +530,10 @@ void test_MontgomeryForm()
                                          mf.getCanonicalValue(mf.convertIn(4)));
         EXPECT_TRUE(mf.getCanonicalValue(mf.add(x,yc)) ==
                                          mf.getCanonicalValue(mf.convertIn(4)));
+        EXPECT_TRUE(mf.getCanonicalValue(mf.two_times(y)) ==
+                                         mf.getCanonicalValue(mf.convertIn(9)));
+        EXPECT_TRUE(mf.getCanonicalValue(mf.two_times(yc)) ==
+                                         mf.getCanonicalValue(mf.convertIn(9)));
         EXPECT_TRUE(mf.getUnityValue()== mf.getCanonicalValue(mf.convertIn(1)));
         EXPECT_TRUE(mf.getZeroValue() == mf.getCanonicalValue(mf.convertIn(0)));
         EXPECT_TRUE(modulus > 0);
@@ -526,6 +591,10 @@ void test_MontgomeryForm()
         EXPECT_TRUE(mf.convertOut(mf.add(y,x)) == 0);
         EXPECT_TRUE(mf.convertOut(mf.add(x,yc)) == 0);
         EXPECT_TRUE(mf.convertOut(mf.add(y,xc)) == 0);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(x)) == 2);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(xc)) == 2);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(y)) == 1);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(yc)) == 1);
         test_subtract_variants(mf, y, x, 1);
         test_subtract_variants(mf, x, y, 2);
         EXPECT_TRUE(mf.getCanonicalValue(mf.subtract(x,y)) ==
@@ -586,6 +655,12 @@ void test_MontgomeryForm()
         EXPECT_TRUE(mf.convertOut(mf.add(y,x)) == 1);
         EXPECT_TRUE(mf.convertOut(mf.add(x,yc)) == 1);
         EXPECT_TRUE(mf.convertOut(mf.add(y,xc)) == 1);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(x)) ==static_cast<T>(modulus-2));
+        EXPECT_TRUE(mf.convertOut(mf.two_times(xc))==static_cast<T>(modulus-2));
+        EXPECT_TRUE(mf.convertOut(mf.two_times(y)) == 4);
+        EXPECT_TRUE(mf.convertOut(mf.two_times(yc)) == 4);
+        EXPECT_TRUE(mf.two_times(xc) ==
+                 mf.getCanonicalValue(mf.convertIn(static_cast<T>(modulus-2))));
         test_subtract_variants(mf, y, x, 3);
         test_subtract_variants(mf, x, y, modulus - 3);
         EXPECT_TRUE(mf.getCanonicalValue(mf.add(x,y)) ==
@@ -698,16 +773,28 @@ void test_MontgomeryForm()
         EXPECT_TRUE(mf.gcd_with_modulus(mf.convertIn(12), GcdFunctor()) == 3);
     }
 
-    // test remainder()
+    // test remainder() and inverse()
     {
         T max = max_modulus;
         T mid = static_cast<T>(max/2);
         mid = (mid % 2 == 0) ? static_cast<T>(mid + 1) : mid;
-        test_remainder(MFactory::construct(3));    // smallest possible modulus
-        test_remainder(MFactory::construct(max));  // largest possible modulus
-        if (121 <= max)
-            test_remainder(MFactory::construct(121));
-        test_remainder(MFactory::construct(mid));
+        auto mf_3 = MFactory::construct(3);
+        test_remainder(mf_3);    // smallest possible modulus
+        test_inverse(mf_3);
+
+        auto mf_max = MFactory::construct(max);
+        test_remainder(mf_max);  // largest possible modulus
+        test_inverse(mf_max);
+
+        if (121 <= max) {
+            auto mf_121 = MFactory::construct(121);
+            test_remainder(mf_121);
+            test_inverse(mf_121);
+        }
+
+        auto mf_mid = MFactory::construct(mid);
+        test_remainder(mf_mid);
+        test_inverse(mf_mid);
     }
 }
 
@@ -729,3 +816,6 @@ void test_custom_monty()
 
 
 } // end unnamed namespace
+
+#endif
+

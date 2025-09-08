@@ -19,7 +19,7 @@
 #include <hurchalla/modular_arithmetic/modular_pow.h>
 #include <hurchalla/montgomery_arithmetic/MontgomeryForm.h>
 #include <hurchalla/montgomery_arithmetic/montgomery_form_aliases.h>
-#include <hurchalla/montgomery_arithmetic/detail/experimental/montgomery_two_pow/montgomery_two_pow.h>
+#include <hurchalla/montgomery_arithmetic/detail/platform_specific/montgomery_two_pow.h>
 
 #include <stdint.h>
 
@@ -41,7 +41,7 @@ uint128_t modpow(uint128_t exponent, uint128_t modulus)
         uint64_t e = (uint64_t) exponent;
         uint64_t m = (uint64_t) modulus;
         hurchalla::MontgomeryQuarter<uint64_t> mf(m);
-        auto res_montval = hurchalla::montgomery_two_pow(mf, e);
+        auto res_montval = hurchalla::detail::montgomery_two_pow::call(mf, e);
         uint64_t res = mf.convertOut(res_montval);
         return res;
     }
@@ -50,7 +50,7 @@ uint128_t modpow(uint128_t exponent, uint128_t modulus)
         uint64_t e = (uint64_t) exponent;
         uint64_t m = (uint64_t) modulus;
         hurchalla::MontgomeryForm<uint64_t> mf(m);
-        auto res_montval = hurchalla::montgomery_two_pow(mf, e);
+        auto res_montval = hurchalla::detail::montgomery_two_pow::call(mf, e);
         uint64_t res = mf.convertOut(res_montval);
         return res;
     }
@@ -58,7 +58,7 @@ uint128_t modpow(uint128_t exponent, uint128_t modulus)
     {
         ASSERT(modulus <= std::numeric_limits<uint128_t>::max() / 4);
         hurchalla::MontgomeryQuarter<uint128_t> mf(modulus);
-        auto res_montval = hurchalla::montgomery_two_pow(mf, exponent);
+        auto res_montval = hurchalla::detail::montgomery_two_pow::call(mf, exponent);
         uint128_t res = mf.convertOut(res_montval);
         return res;
     }

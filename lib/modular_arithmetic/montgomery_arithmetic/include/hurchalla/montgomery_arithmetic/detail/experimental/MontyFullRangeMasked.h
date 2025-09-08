@@ -11,6 +11,7 @@
 
 #include "hurchalla/montgomery_arithmetic/low_level_api/REDC.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyCommonBase.h"
+#include "hurchalla/montgomery_arithmetic/detail/MontyTags.h"
 #include "hurchalla/modular_arithmetic/detail/optimization_tag_structs.h"
 #include "hurchalla/modular_arithmetic/modular_addition.h"
 #include "hurchalla/modular_arithmetic/modular_subtraction.h"
@@ -19,7 +20,7 @@
 #include "hurchalla/util/conditional_select.h"
 #include "hurchalla/util/unsigned_multiply_to_hilo_product.h"
 #include "hurchalla/util/compiler_macros.h"
-#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <type_traits>
 
 namespace hurchalla { namespace detail {
@@ -27,9 +28,6 @@ namespace hurchalla { namespace detail {
 
 // The name "Fullrange" signifies that there are essentially no preconditions on
 // the value of the modulus used in the Montgomery representation.
-
-
-struct TagMontyFullrangeMasked final {};
 
 
 // struct used internally by MontyFullRangeMasked
@@ -114,12 +112,14 @@ class MontyFullRangeMasked final :
     using typename BC::V;
     using typename BC::C;
     using FV = typename MfrmValueTypes<T>::FV;
+    using SV = V;
  public:
     using MontyTag = TagMontyFullrangeMasked;
     using uint_type = T;
     using montvalue_type = V;
     using canonvalue_type = C;
     using fusingvalue_type = FV;
+    using squaringvalue_type = SV;
 
     explicit MontyFullRangeMasked(T modulus) : BC(modulus) {}
 
@@ -137,10 +137,10 @@ class MontyFullRangeMasked final :
 
     HURCHALLA_FORCE_INLINE C getCanonicalValue(V x) const
     {
-        HPBC_PRECONDITION2(isValid(x));
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(x));
         T tmpn = static_cast<T>(x.getmask() & n_);
         C result = C(static_cast<T>(x.getbits() + tmpn));
-        HPBC_POSTCONDITION2(result.get() < n_);
+        HPBC_CLOCKWORK_POSTCONDITION2(result.get() < n_);
         return result;
     }
 
@@ -170,14 +170,14 @@ class MontyFullRangeMasked final :
 
     HURCHALLA_FORCE_INLINE V add(V x, C cy) const
     {
-        HPBC_PRECONDITION2(isValid(x));
-        HPBC_PRECONDITION2(0 <= cy.get() && cy.get() < n_);
-        HPBC_ASSERT2(0 <= cy.get() && cy.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(x));
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= cy.get() && cy.get() < n_);
+        HPBC_CLOCKWORK_ASSERT2(0 <= cy.get() && cy.get() < n_);
 #if defined(_MSC_VER)
 // MSVC only section-- for fewer uops and lower latency (x64 and arm).  Either
 // section would be correct, but msvc generates better machine code here
         C cx = getCanonicalValue(x);
-        HPBC_ASSERT2(0 <= cx.get() && cx.get() < n_);
+        HPBC_CLOCKWORK_ASSERT2(0 <= cx.get() && cx.get() < n_);
         T resultval = ::hurchalla::modular_addition_prereduced_inputs(
                                                         cx.get(), cy.get(), n_);
         T result_smask = 0;
@@ -192,7 +192,7 @@ class MontyFullRangeMasked final :
         T result_smask = static_cast<T>(static_cast<T>(b) - static_cast<T>(1));
 #endif
         V result = V(resultval, result_smask);
-        HPBC_POSTCONDITION2(isValid(result));
+        HPBC_CLOCKWORK_POSTCONDITION2(isValid(result));
         return result;
     }
     HURCHALLA_FORCE_INLINE V add(V x, V y) const
@@ -202,40 +202,40 @@ class MontyFullRangeMasked final :
     }
     HURCHALLA_FORCE_INLINE C add(C cx, C cy) const
     {
-        HPBC_PRECONDITION2(cx.get() < n_);
-        HPBC_PRECONDITION2(cy.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(cx.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(cy.get() < n_);
         T result = ::hurchalla::modular_addition_prereduced_inputs(
                                                         cx.get(), cy.get(), n_);
-        HPBC_POSTCONDITION2(result < n_);
+        HPBC_CLOCKWORK_POSTCONDITION2(result < n_);
         return C(result);
     }
 
     template <class PTAG>
     HURCHALLA_FORCE_INLINE V subtract(V x, C cy, PTAG) const
     {
-        HPBC_PRECONDITION2(isValid(x));
-        HPBC_PRECONDITION2(0 <= cy.get() && cy.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(x));
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= cy.get() && cy.get() < n_);
         C cx = getCanonicalValue(x);
-        HPBC_ASSERT2(0 <= cx.get() && cx.get() < n_);
+        HPBC_CLOCKWORK_ASSERT2(0 <= cx.get() && cx.get() < n_);
         T resultval = static_cast<T>(cx.get() - cy.get());
         bool b = (cx.get() < cy.get());
         T result_smask = static_cast<T>(0 - static_cast<T>(b));
         V result = V(resultval, result_smask);
-        HPBC_POSTCONDITION2(isValid(result));
+        HPBC_CLOCKWORK_POSTCONDITION2(isValid(result));
         return result;
     }
     template <class PTAG>
     HURCHALLA_FORCE_INLINE V subtract(C cx, V y, PTAG) const
     {
-        HPBC_PRECONDITION2(0 <= cx.get() && cx.get() < n_);
-        HPBC_PRECONDITION2(isValid(y));
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= cx.get() && cx.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(y));
         C cy = getCanonicalValue(y);
-        HPBC_ASSERT2(0 <= cy.get() && cy.get() < n_);
+        HPBC_CLOCKWORK_ASSERT2(0 <= cy.get() && cy.get() < n_);
         T resultval = static_cast<T>(cx.get() - cy.get());
         bool b = (cx.get() < cy.get());
         T result_smask = static_cast<T>(0 - static_cast<T>(b));
         V result = V(resultval, result_smask);
-        HPBC_POSTCONDITION2(isValid(result));
+        HPBC_CLOCKWORK_POSTCONDITION2(isValid(result));
         return result;
     }
     template <class PTAG>
@@ -247,11 +247,11 @@ class MontyFullRangeMasked final :
     template <class PTAG>
     HURCHALLA_FORCE_INLINE C subtract(C cx, C cy, PTAG) const
     {
-        HPBC_PRECONDITION2(cx.get() < n_);
-        HPBC_PRECONDITION2(cy.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(cx.get() < n_);
+        HPBC_CLOCKWORK_PRECONDITION2(cy.get() < n_);
         T result = ::hurchalla::modular_subtraction_prereduced_inputs
                                     <decltype(n_),PTAG>(cx.get(), cy.get(), n_);
-        HPBC_POSTCONDITION2(result < n_);
+        HPBC_CLOCKWORK_POSTCONDITION2(result < n_);
         return C(result);
     }
 
@@ -261,6 +261,37 @@ class MontyFullRangeMasked final :
         return subtract(x, y, LowuopsTag());
     }
 
+    HURCHALLA_FORCE_INLINE V two_times(V x) const
+    {
+        return add(x, x);
+    }
+    HURCHALLA_FORCE_INLINE C two_times(C cx) const
+    {
+        return add(cx, cx);
+    }
+
+
+    HURCHALLA_FORCE_INLINE SV getSquaringValue(V x) const
+    {
+        static_assert(std::is_same<V, SV>::value, "");
+        return x;
+    }
+    HURCHALLA_FORCE_INLINE SV squareSV(SV sv) const
+    {
+        static_assert(std::is_same<V, SV>::value, "");
+        return BC::square(sv, LowlatencyTag());
+    }
+    HURCHALLA_FORCE_INLINE V squareToMontgomeryValue(SV sv) const
+    {
+        static_assert(std::is_same<V, SV>::value, "");
+        return BC::square(sv, LowlatencyTag());
+    }
+    HURCHALLA_FORCE_INLINE V getMontgomeryValue(SV sv) const
+    {
+        static_assert(std::is_same<V, SV>::value, "");
+        return sv;
+    }
+
 private:
     // functions called by the 'curiously recurring template pattern' base (BC).
     friend BC;
@@ -268,14 +299,14 @@ private:
     template <class PTAG> HURCHALLA_FORCE_INLINE
     V montyREDC(bool& resultIsZero, T u_hi, T u_lo, PTAG) const
     {
-        HPBC_PRECONDITION2(u_hi < n_);  // verifies that (u_hi*R + u_lo) < n*R
+        HPBC_CLOCKWORK_PRECONDITION2(u_hi < n_);  // verifies that (u_hi*R + u_lo) < n*R
         bool isNegative;
         T resultval = ::hurchalla::REDC_incomplete(
                                         isNegative, u_hi, u_lo, n_, BC::inv_n_);
         T result_smask = static_cast<T>(0 - static_cast<T>(isNegative));
         resultIsZero = (resultval == 0);
         V result = V(resultval, result_smask);
-        HPBC_POSTCONDITION2(isValid(result));
+        HPBC_CLOCKWORK_POSTCONDITION2(isValid(result));
         return result;
     }
     template <class PTAG> HURCHALLA_FORCE_INLINE
@@ -289,7 +320,7 @@ private:
     // high word of x*x, and writes the low word of x*x to u_lo.
     HURCHALLA_FORCE_INLINE T squareToHiLo(T& u_lo, V x) const
     {
-        HPBC_PRECONDITION2(isValid(x));
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(x));
         T a = x.getbits();
         T umlo;
         T umhi = ::hurchalla::unsigned_multiply_to_hilo_product(umlo, a, a);
@@ -313,7 +344,7 @@ private:
         // umhi + s*(R-2*a)  using  umhi - s*2*a.  Simplifying further, we get
         // high_word_result = umhi - 2*(x.getmask() & a).
 
-        HPBC_POSTCONDITION2(result_hi < n_);
+        HPBC_CLOCKWORK_POSTCONDITION2(result_hi < n_);
         // Since we have class invariant n < R, and our isValid(x) precondition
         // requires -n < x < n,  we know  x*x < n*n < n*R.
         // Thus  result_hi*R + umlo == x*x < n*R, and since  0 <= umlo, we know
@@ -450,12 +481,12 @@ private:
     HURCHALLA_FORCE_INLINE T multiplyToHiLo(
                                      T& HURCHALLA_RESTRICT u_lo, V x, V y) const
     {
-        HPBC_PRECONDITION2(isValid(x));  // x has range [-n, n)
-        HPBC_PRECONDITION2(isValid(y));
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(x));  // x has range [-n, n)
+        HPBC_CLOCKWORK_PRECONDITION2(isValid(y));
         C cy = getCanonicalValue(y);     // cy has range [0, n)
         T a = x.getbits();
         T b = cy.get();                  // b has range [0, n)
-        HPBC_ASSERT2(0 <= b && b < n_);
+        HPBC_CLOCKWORK_ASSERT2(0 <= b && b < n_);
 
         T u_hi = ::hurchalla::unsigned_multiply_to_hilo_product(u_lo, a, b);
 #if 1
@@ -475,7 +506,7 @@ private:
         u_hi = conditional_select(tmp != 0, sumn, u_hi); //uhi=(tmp!=0)?sumn:uhi
         u_hi = static_cast<T>(u_hi - tmp);
 #endif
-        HPBC_POSTCONDITION2(u_hi < n_);
+        HPBC_CLOCKWORK_POSTCONDITION2(u_hi < n_);
         return u_hi;
 
         // Proof that the algorithm expressed in code above is correct:

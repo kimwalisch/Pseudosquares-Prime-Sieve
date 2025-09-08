@@ -13,7 +13,7 @@
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/conditional_select.h"
 #include "hurchalla/util/compiler_macros.h"
-#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <cstdint>
 #include <type_traits>
 
@@ -55,9 +55,9 @@ struct default_impl_modadd_unsigned {
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
-    HPBC_PRECONDITION2(modulus>0);
-    HPBC_PRECONDITION2(a<modulus);  // i.e. the input must be prereduced
-    HPBC_PRECONDITION2(b<modulus);  // i.e. the input must be prereduced
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // i.e. the input must be prereduced
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // i.e. the input must be prereduced
 
     // We want essentially-  result = (a+b < modulus) ? a+b : a+b-modulus
     //   But due to the potential for overflow on a+b, we need to instead test
@@ -70,7 +70,7 @@ struct default_impl_modadd_unsigned {
       // result = (a < tmp) ? sum : result
     result = ::hurchalla::conditional_select(a < tmp, sum, result);
 
-    HPBC_POSTCONDITION2(static_cast<T>(0) <= result && result < modulus);
+    HPBC_CLOCKWORK_POSTCONDITION2(static_cast<T>(0) <= result && result < modulus);
     return result;
   }
 };
@@ -87,9 +87,9 @@ struct default_impl_modadd_unsigned {
   {
     static_assert(ut_numeric_limits<T>::is_integer, "");
     static_assert(!(ut_numeric_limits<T>::is_signed), "");
-    HPBC_PRECONDITION2(modulus>0);
-    HPBC_PRECONDITION2(a<modulus);  // the input must be prereduced
-    HPBC_PRECONDITION2(b<modulus);  // the input must be prereduced
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // the input must be prereduced
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // the input must be prereduced
 
     T sum = static_cast<T>(a + b);
     T tmp = static_cast<T>(b - modulus);
@@ -97,7 +97,7 @@ struct default_impl_modadd_unsigned {
       // result = (result >= a) ? sum : result
     result = ::hurchalla::conditional_select(result >= a, sum, result);
 
-    HPBC_POSTCONDITION2(static_cast<T>(0) <= result && result < modulus);
+    HPBC_CLOCKWORK_POSTCONDITION2(static_cast<T>(0) <= result && result < modulus);
     return result;
   }
 };
@@ -125,21 +125,92 @@ struct impl_modular_addition_unsigned {
      defined(HURCHALLA_ALLOW_INLINE_ASM_MODADD)) && \
     defined(HURCHALLA_TARGET_ISA_X86_64) && !defined(_MSC_VER)
 
-
 // Note: these functions contain the calculation "b - modulus".  If neither 'b'
 // nor 'modulus' was recently set/modified, then "b - modulus" will usually be
 // calculated at the same time as earlier work by the CPU, or in a loop it could
 // potentially be loop hoisted by the compiler.  This is what provides a
 // potential for lowered latency.
+
+# if (HURCHALLA_COMPILER_HAS_UINT128_T())
+template <>
+struct impl_modular_addition_unsigned<__uint128_t> {
+  HURCHALLA_FORCE_INLINE static
+  __uint128_t call(__uint128_t a, __uint128_t b, __uint128_t modulus)
+  {
+    using std::uint64_t;
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // __uint128_t guarantees a>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // __uint128_t guarantees b>=0.
+
+    __uint128_t tmp = static_cast<__uint128_t>(b - modulus);
+    __uint128_t sum = static_cast<__uint128_t>(a + b);
+    uint64_t alo = static_cast<uint64_t>(a);
+    uint64_t ahi = static_cast<uint64_t>(a >> 64);
+    uint64_t tmplo = static_cast<uint64_t>(tmp);
+    uint64_t tmphi = static_cast<uint64_t>(tmp >> 64);
+    uint64_t sumlo = static_cast<uint64_t>(sum);
+    uint64_t sumhi = static_cast<uint64_t>(sum >> 64);
+    __asm__ ("addq %[tmplo], %[alo] \n\t"    /* tmp2 = a + tmp */
+             "adcq %[tmphi], %[ahi] \n\t"
+             "cmovaeq %[sumlo], %[alo] \n\t" /* tmp2 = (tmp2>=a) ? sum : tmp2 */
+             "cmovaeq %[sumhi], %[ahi] \n\t"
+             : [alo]"+&r"(alo), [ahi]"+&r"(ahi)
+#  if defined(__clang__)        /* https://bugs.llvm.org/show_bug.cgi?id=20197 */
+             : [tmplo]"r"(tmplo), [tmphi]"r"(tmphi), [sumlo]"r"(sumlo), [sumhi]"r"(sumhi)
+#  else
+             : [tmplo]"rm"(tmplo), [tmphi]"rm"(tmphi), [sumlo]"rm"(sumlo), [sumhi]"rm"(sumhi)
+#  endif
+             : "cc");
+    __uint128_t result = (static_cast<__uint128_t>(ahi) << 64) | alo;
+
+    HPBC_CLOCKWORK_POSTCONDITION2(result < modulus);  // __uint128_t guarantees result>=0.
+    HPBC_CLOCKWORK_POSTCONDITION2(result ==
+                             default_impl_modadd_unsigned::call(a, b, modulus));
+    return result;
+  }
+};
+# endif
+
+template <>
+struct impl_modular_addition_unsigned<std::uint64_t> {
+  HURCHALLA_FORCE_INLINE static
+  std::uint64_t call(std::uint64_t a, std::uint64_t b, std::uint64_t modulus)
+  {
+    using std::uint64_t;
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // uint64_t guarantees a>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // uint64_t guarantees b>=0.
+
+    uint64_t sum = static_cast<uint64_t>(a + b);
+    uint64_t tmp = static_cast<uint64_t>(b - modulus);
+    uint64_t tmp2 = a;  // we prefer not to overwrite an input (a)
+    __asm__ ("addq %[tmp], %[tmp2] \n\t"     /* tmp2 = a + tmp */
+             "cmovaeq %[sum], %[tmp2] \n\t"  /* tmp2 = (tmp2>=a) ? sum : tmp2 */
+             : [tmp2]"+&r"(tmp2)
+# if defined(__clang__)        /* https://bugs.llvm.org/show_bug.cgi?id=20197 */
+             : [tmp]"r"(tmp), [sum]"r"(sum)
+# else
+             : [tmp]"rm"(tmp), [sum]"rm"(sum)
+# endif
+             : "cc");
+    uint64_t result = tmp2;
+
+    HPBC_CLOCKWORK_POSTCONDITION2(result < modulus);  // uint64_t guarantees result>=0.
+    HPBC_CLOCKWORK_POSTCONDITION2(result ==
+                             default_impl_modadd_unsigned::call(a, b, modulus));
+    return result;
+  }
+};
+
 template <>
 struct impl_modular_addition_unsigned<std::uint32_t> {
   HURCHALLA_FORCE_INLINE static
   std::uint32_t call(std::uint32_t a, std::uint32_t b, std::uint32_t modulus)
   {
     using std::uint32_t;
-    HPBC_PRECONDITION2(modulus>0);
-    HPBC_PRECONDITION2(a<modulus);  // uint32_t guarantees a>=0.
-    HPBC_PRECONDITION2(b<modulus);  // uint32_t guarantees b>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // uint32_t guarantees a>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // uint32_t guarantees b>=0.
 
     // By calculating tmp outside of the __asm__, we allow the compiler to
     // potentially loop hoist tmp, if this function is inlined into a loop.
@@ -161,54 +232,34 @@ struct impl_modular_addition_unsigned<std::uint32_t> {
              : "cc");
     uint32_t result = tmp2;
 
-    HPBC_POSTCONDITION2(result < modulus);  // uint32_t guarantees result>=0.
-    HPBC_POSTCONDITION2(result ==
+    HPBC_CLOCKWORK_POSTCONDITION2(result < modulus);  // uint32_t guarantees result>=0.
+    HPBC_CLOCKWORK_POSTCONDITION2(result ==
                              default_impl_modadd_unsigned::call(a, b, modulus));
     return result;
   }
 };
 
-template <>
-struct impl_modular_addition_unsigned<std::uint64_t> {
-  HURCHALLA_FORCE_INLINE static
-  std::uint64_t call(std::uint64_t a, std::uint64_t b, std::uint64_t modulus)
-  {
-    using std::uint64_t;
-    HPBC_PRECONDITION2(modulus>0);
-    HPBC_PRECONDITION2(a<modulus);  // uint64_t guarantees a>=0.
-    HPBC_PRECONDITION2(b<modulus);  // uint64_t guarantees b>=0.
+// end of inline asm functions for x86_64
+#endif
 
-    uint64_t sum = static_cast<uint64_t>(a + b);
-    uint64_t tmp = static_cast<uint64_t>(b - modulus);
-    uint64_t tmp2 = a;  // we prefer not to overwrite an input (a)
-    __asm__ ("addq %[tmp], %[tmp2] \n\t"     /* tmp2 = a + tmp */
-             "cmovaeq %[sum], %[tmp2] \n\t"  /* tmp2 = (tmp2>=a) ? sum : tmp2 */
-             : [tmp2]"+&r"(tmp2)
-# if defined(__clang__)        /* https://bugs.llvm.org/show_bug.cgi?id=20197 */
-             : [tmp]"r"(tmp), [sum]"r"(sum)
-# else
-             : [tmp]"rm"(tmp), [sum]"rm"(sum)
-# endif
-             : "cc");
-    uint64_t result = tmp2;
 
-    HPBC_POSTCONDITION2(result < modulus);  // uint64_t guarantees result>=0.
-    HPBC_POSTCONDITION2(result ==
-                             default_impl_modadd_unsigned::call(a, b, modulus));
-    return result;
-  }
-};
 
-#ifdef HURCHALLA_ENABLE_INLINE_ASM_128_BIT
+
+// ARM64
+// MSVC doesn't support inline asm so we skip it.
+#if (defined(HURCHALLA_ALLOW_INLINE_ASM_ALL) || \
+     defined(HURCHALLA_ALLOW_INLINE_ASM_MODADD)) && \
+    defined(HURCHALLA_TARGET_ISA_ARM_64) && !defined(_MSC_VER)
+# if (HURCHALLA_COMPILER_HAS_UINT128_T())
 template <>
 struct impl_modular_addition_unsigned<__uint128_t> {
   HURCHALLA_FORCE_INLINE static
   __uint128_t call(__uint128_t a, __uint128_t b, __uint128_t modulus)
   {
     using std::uint64_t;
-    HPBC_PRECONDITION2(modulus>0);
-    HPBC_PRECONDITION2(a<modulus);  // __uint128_t guarantees a>=0.
-    HPBC_PRECONDITION2(b<modulus);  // __uint128_t guarantees b>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // __uint128_t guarantees a>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // __uint128_t guarantees b>=0.
 
     __uint128_t tmp = static_cast<__uint128_t>(b - modulus);
     __uint128_t sum = static_cast<__uint128_t>(a + b);
@@ -218,29 +269,90 @@ struct impl_modular_addition_unsigned<__uint128_t> {
     uint64_t tmphi = static_cast<uint64_t>(tmp >> 64);
     uint64_t sumlo = static_cast<uint64_t>(sum);
     uint64_t sumhi = static_cast<uint64_t>(sum >> 64);
-    __asm__ ("addq %[tmplo], %[alo] \n\t"    /* tmp2 = a + tmp */
-             "adcq %[tmphi], %[ahi] \n\t"
-             "cmovaeq %[sumlo], %[alo] \n\t" /* tmp2 = (tmp2>=a) ? sum : tmp2 */
-             "cmovaeq %[sumhi], %[ahi] \n\t"
-             : [alo]"+&r"(alo), [ahi]"+&r"(ahi)
-# if defined(__clang__)        /* https://bugs.llvm.org/show_bug.cgi?id=20197 */
-             : [tmplo]"r"(tmplo), [tmphi]"r"(tmphi), [sumlo]"r"(sumlo), [sumhi]"r"(sumhi)
-# else
-             : [tmplo]"rm"(tmplo), [tmphi]"rm"(tmphi), [sumlo]"rm"(sumlo), [sumhi]"rm"(sumhi)
-# endif
+    uint64_t reslo;
+    uint64_t reshi;
+    __asm__ ("adds %[reslo], %[alo], %[tmplo] \n\t"         /* res = a + tmp */
+             "adcs %[reshi], %[ahi], %[tmphi] \n\t"
+             "csel %[reslo], %[sumlo], %[reslo], lo \n\t"   /* res = (res>=a) ? sum : res */
+             "csel %[reshi], %[sumhi], %[reshi], lo \n\t"
+             : [reslo]"=&r"(reslo), [reshi]"=&r"(reshi)
+             : [alo]"r"(alo), [ahi]"r"(ahi), [tmplo]"r"(tmplo), [tmphi]"r"(tmphi), [sumlo]"r"(sumlo), [sumhi]"r"(sumhi)
              : "cc");
-    __uint128_t result = (static_cast<__uint128_t>(ahi) << 64) | alo;
+    __uint128_t result = (static_cast<__uint128_t>(reshi) << 64) | reslo;
 
-    HPBC_POSTCONDITION2(result < modulus);  // __uint128_t guarantees result>=0.
-    HPBC_POSTCONDITION2(result ==
+    HPBC_CLOCKWORK_POSTCONDITION2(result < modulus);  // __uint128_t guarantees result>=0.
+    HPBC_CLOCKWORK_POSTCONDITION2(result ==
                              default_impl_modadd_unsigned::call(a, b, modulus));
     return result;
   }
 };
+# endif
+
+template <>
+struct impl_modular_addition_unsigned<std::uint64_t> {
+  HURCHALLA_FORCE_INLINE static
+  std::uint64_t call(std::uint64_t a, std::uint64_t b, std::uint64_t modulus)
+  {
+    using std::uint64_t;
+    HPBC_CLOCKWORK_PRECONDITION2(modulus>0);
+    HPBC_CLOCKWORK_PRECONDITION2(a<modulus);  // uint64_t guarantees a>=0.
+    HPBC_CLOCKWORK_PRECONDITION2(b<modulus);  // uint64_t guarantees b>=0.
+
+    uint64_t sum = static_cast<uint64_t>(a + b);
+    uint64_t tmp = static_cast<uint64_t>(b - modulus);
+    uint64_t res;
+    __asm__ ("adds %[res], %[a], %[tmp] \n\t"        /* res = a + tmp */
+             "csel %[res], %[sum], %[res], lo \n\t"  /* res = (res>=a) ? sum : res */
+             : [res]"=&r"(res)
+             : [a]"r"(a), [tmp]"r"(tmp), [sum]"r"(sum)
+             : "cc");
+    uint64_t result = res;
+
+    HPBC_CLOCKWORK_POSTCONDITION2(result < modulus);  // uint64_t guarantees result>=0.
+    HPBC_CLOCKWORK_POSTCONDITION2(result ==
+                             default_impl_modadd_unsigned::call(a, b, modulus));
+    return result;
+  }
+};
+
+template <>
+struct impl_modular_addition_unsigned<std::uint32_t> {
+  using U = std::uint32_t;
+  HURCHALLA_FORCE_INLINE static U call(U a, U b, U modulus)
+  {
+    std::uint64_t result = impl_modular_addition_unsigned
+                                           <std::uint64_t>::call(a, b, modulus);
+    return static_cast<U>(result);
+  }
+};
+
+// end of inline asm functions for ARM_64
 #endif
 
-// end of inline asm functions for x86_64
-#endif
+
+
+
+template <>
+struct impl_modular_addition_unsigned<std::uint16_t> {
+  using U = std::uint16_t;
+  HURCHALLA_FORCE_INLINE static U call(U a, U b, U modulus)
+  {
+    std::uint32_t result = impl_modular_addition_unsigned
+                                           <std::uint32_t>::call(a, b, modulus);
+    return static_cast<U>(result);
+  }
+};
+template <>
+struct impl_modular_addition_unsigned<std::uint8_t> {
+  using U = std::uint8_t;
+  HURCHALLA_FORCE_INLINE static U call(U a, U b, U modulus)
+  {
+    std::uint32_t result = impl_modular_addition_unsigned
+                                           <std::uint32_t>::call(a, b, modulus);
+    return static_cast<U>(result);
+  }
+};
+
 
 
 
@@ -268,21 +380,21 @@ struct impl_modular_addition<T, true> {
     static_assert(static_cast<T>(static_cast<U>(static_cast<T>(-1))) ==
                   static_cast<T>(-1), "Casting a signed T value to unsigned and"
                                " back again must result in the original value");
-    HPBC_PRECONDITION2(modulus > 0);
-    HPBC_PRECONDITION2(0 <= a && a < modulus);
-    HPBC_PRECONDITION2(0 <= b && b < modulus);
+    HPBC_CLOCKWORK_PRECONDITION2(modulus > 0);
+    HPBC_CLOCKWORK_PRECONDITION2(0 <= a && a < modulus);
+    HPBC_CLOCKWORK_PRECONDITION2(0 <= b && b < modulus);
 
 #if defined(HURCHALLA_AVOID_CSELECT)
     static_assert((static_cast<T>(-1) >> 1) == static_cast<T>(-1),
                           "Arithmetic right shift is required but unavailable");
     T tmp = static_cast<T>(b - modulus);
-    HPBC_ASSERT2(tmp < 0);
+    HPBC_CLOCKWORK_ASSERT2(tmp < 0);
     tmp = static_cast<T>(tmp + a);
     // if tmp is negative, use a bit mask of all 1s.  Otherwise use all 0s.
     U mask = static_cast<U>(tmp >> ut_numeric_limits<T>::digits);
     U masked_modulus = static_cast<U>(mask & static_cast<U>(modulus));
     U result = static_cast<U>(static_cast<U>(tmp) + masked_modulus);
-    HPBC_ASSERT2(result == impl_modular_addition_unsigned<U>::call(
+    HPBC_CLOCKWORK_ASSERT2(result == impl_modular_addition_unsigned<U>::call(
                 static_cast<U>(a), static_cast<U>(b), static_cast<U>(modulus)));
 #else
     U result = impl_modular_addition_unsigned<U>::call(static_cast<U>(a),

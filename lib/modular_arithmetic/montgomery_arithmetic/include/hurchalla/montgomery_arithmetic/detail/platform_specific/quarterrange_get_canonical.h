@@ -13,7 +13,7 @@
 #include "hurchalla/util/traits/extensible_make_signed.h"
 #include "hurchalla/util/conditional_select.h"
 #include "hurchalla/util/compiler_macros.h"
-#include "hurchalla/util/programming_by_contract.h"
+#include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <cstdint>
 #include <algorithm>
 
@@ -38,8 +38,13 @@ struct default_quarterrange_get_canonical {
     // that the modulus n < R/4
     constexpr T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
                                    (ut_numeric_limits<T>::digits - 2));
-    HPBC_PRECONDITION2(0 <= n && n < Rdiv4);
-    HPBC_PRECONDITION2(0 <= x && x < static_cast<T>(2*n));
+    HPBC_CLOCKWORK_PRECONDITION2(0 <= n && n < Rdiv4);
+    HPBC_CLOCKWORK_PRECONDITION2(0 <= x && x < static_cast<T>(2*n));
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic warning "-Wstrict-overflow=2"
+#endif
 
 #if 0
    // this should be correct, but the #else is preferred for performance
@@ -65,12 +70,16 @@ struct default_quarterrange_get_canonical {
 # else
        // tmp = (tmp<0) ? x : tmp
     tmp = ::hurchalla::conditional_select(tmp<0, static_cast<S>(x), tmp);
-    HPBC_ASSERT2(0 <= tmp && tmp < static_cast<S>(n));
+    HPBC_CLOCKWORK_ASSERT2(0 <= tmp && tmp < static_cast<S>(n));
     T result = static_cast<T>(tmp);
 # endif
 #endif
-    HPBC_POSTCONDITION2(result < n);
+    HPBC_CLOCKWORK_POSTCONDITION2(result < n);
     return result;
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic pop
+#endif
   }
 };
 
@@ -89,14 +98,14 @@ struct quarterrange_get_canonical {
      defined(HURCHALLA_ALLOW_INLINE_ASM_QUARTERRANGE_GET_CANONICAL)) && \
       defined(HURCHALLA_TARGET_ISA_X86_64) && !defined(_MSC_VER)
 
-#ifdef HURCHALLA_ENABLE_INLINE_ASM_128_BIT
+# if (HURCHALLA_COMPILER_HAS_UINT128_T())
 template <>
 struct quarterrange_get_canonical<__uint128_t> {
   HURCHALLA_FORCE_INLINE
   static __uint128_t call(__uint128_t x, __uint128_t n)
   {
     using std::uint64_t;
-    HPBC_PRECONDITION2(x < static_cast<__uint128_t>(2*n));
+    HPBC_CLOCKWORK_PRECONDITION2(x < static_cast<__uint128_t>(2*n));
 
     uint64_t xlo = static_cast<uint64_t>(x);
     uint64_t xhi = static_cast<uint64_t>(x >> 64);
@@ -117,8 +126,8 @@ struct quarterrange_get_canonical<__uint128_t> {
              : "cc");
     __uint128_t result = (static_cast<__uint128_t>(xhi) << 64) | xlo;
 
-    HPBC_POSTCONDITION2(result < n);
-    HPBC_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
+    HPBC_CLOCKWORK_POSTCONDITION2(result < n);
+    HPBC_CLOCKWORK_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
     return result;
   }
 };
@@ -129,7 +138,7 @@ struct quarterrange_get_canonical<std::uint64_t> {
   HURCHALLA_FORCE_INLINE
   static std::uint64_t call(std::uint64_t x, std::uint64_t n)
   {
-    HPBC_PRECONDITION2(x < static_cast<std::uint64_t>(2*n));
+    HPBC_CLOCKWORK_PRECONDITION2(x < static_cast<std::uint64_t>(2*n));
 
     std::uint64_t res = x;
     std::uint64_t tmp = x;
@@ -144,8 +153,8 @@ struct quarterrange_get_canonical<std::uint64_t> {
              : "cc");
     std::uint64_t result = res;
 
-    HPBC_POSTCONDITION2(result < n);
-    HPBC_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
+    HPBC_CLOCKWORK_POSTCONDITION2(result < n);
+    HPBC_CLOCKWORK_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
     return result;
   }
 };
@@ -155,7 +164,7 @@ struct quarterrange_get_canonical<std::uint32_t> {
   HURCHALLA_FORCE_INLINE
   static std::uint32_t call(std::uint32_t x, std::uint32_t n)
   {
-    HPBC_PRECONDITION2(x < static_cast<std::uint32_t>(2*n));
+    HPBC_CLOCKWORK_PRECONDITION2(x < static_cast<std::uint32_t>(2*n));
 
     std::uint32_t res = x;
     std::uint32_t tmp = x;
@@ -170,12 +179,112 @@ struct quarterrange_get_canonical<std::uint32_t> {
              : "cc");
     std::uint32_t result = res;
 
-    HPBC_POSTCONDITION2(result < n);
-    HPBC_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
+    HPBC_CLOCKWORK_POSTCONDITION2(result < n);
+    HPBC_CLOCKWORK_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
     return result;
   }
 };
 #endif
+
+
+
+
+
+// ARM64
+// MSVC doesn't support inline asm so we skip it.
+#if (defined(HURCHALLA_ALLOW_INLINE_ASM_ALL) || \
+     defined(HURCHALLA_ALLOW_INLINE_ASM_QUARTERRANGE_GET_CANONICAL)) && \
+    defined(HURCHALLA_TARGET_ISA_ARM_64) && !defined(_MSC_VER)
+
+# if (HURCHALLA_COMPILER_HAS_UINT128_T())
+template <>
+struct quarterrange_get_canonical<__uint128_t> {
+  HURCHALLA_FORCE_INLINE
+  static __uint128_t call(__uint128_t x, __uint128_t n)
+  {
+    using std::uint64_t;
+    HPBC_CLOCKWORK_PRECONDITION2(x < static_cast<__uint128_t>(2*n));
+
+    uint64_t xlo = static_cast<uint64_t>(x);
+    uint64_t xhi = static_cast<uint64_t>(x >> 64);
+    uint64_t nlo = static_cast<uint64_t>(n);
+    uint64_t nhi = static_cast<uint64_t>(n >> 64);
+
+    uint64_t reslo;
+    uint64_t reshi;
+    __asm__ ("subs %[reslo], %[xlo], %[nlo] \n\t"         /* res = x - n */
+             "sbcs %[reshi], %[xhi], %[nhi] \n\t"
+             "csel %[reslo], %[xlo], %[reslo], lo \n\t"   /* res = (x<n) ? x : res */
+             "csel %[reshi], %[xhi], %[reshi], lo \n\t"
+             : [reslo]"=&r"(reslo), [reshi]"=&r"(reshi)
+             : [xlo]"r"(xlo), [xhi]"r"(xhi), [nlo]"r"(nlo), [nhi]"r"(nhi)
+             : "cc");
+    __uint128_t result = (static_cast<__uint128_t>(reshi) << 64) | reslo;
+
+    HPBC_CLOCKWORK_POSTCONDITION2(result < n);
+    HPBC_CLOCKWORK_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
+    return result;
+  }
+};
+#endif
+
+template <>
+struct quarterrange_get_canonical<std::uint64_t> {
+  HURCHALLA_FORCE_INLINE
+  static std::uint64_t call(std::uint64_t x, std::uint64_t n)
+  {
+    HPBC_CLOCKWORK_PRECONDITION2(x < static_cast<std::uint64_t>(2*n));
+
+    std::uint64_t res;
+    __asm__ ("subs %[res], %[x], %[n] \n\t"         /* res = x - n */
+             "csel %[res], %[x], %[res], lo \n\t"   /* res = (x<n) ? x : res */
+             : [res]"=&r"(res)
+             : [x]"r"(x), [n]"r"(n)
+             : "cc");
+    std::uint64_t result = res;
+
+    HPBC_CLOCKWORK_POSTCONDITION2(result < n);
+    HPBC_CLOCKWORK_POSTCONDITION2(result== default_quarterrange_get_canonical::call(x,n));
+    return result;
+  }
+};
+
+template <>
+struct quarterrange_get_canonical<std::uint32_t> {
+  using U = std::uint32_t;
+  HURCHALLA_FORCE_INLINE static U call(U x, U n)
+  {
+    std::uint64_t result = quarterrange_get_canonical
+                                                    <std::uint64_t>::call(x, n);
+    return static_cast<U>(result);
+  }
+};
+#endif
+
+
+
+
+
+template <>
+struct quarterrange_get_canonical<std::uint16_t> {
+  using U = std::uint16_t;
+  HURCHALLA_FORCE_INLINE static U call(U x, U n)
+  {
+    std::uint32_t result = quarterrange_get_canonical
+                                                    <std::uint32_t>::call(x, n);
+    return static_cast<U>(result);
+  }
+};
+template <>
+struct quarterrange_get_canonical<std::uint8_t> {
+  using U = std::uint8_t;
+  HURCHALLA_FORCE_INLINE static U call(U x, U n)
+  {
+    std::uint32_t result = quarterrange_get_canonical
+                                                    <std::uint32_t>::call(x, n);
+    return static_cast<U>(result);
+  }
+};
 
 
 }} // end namespace
