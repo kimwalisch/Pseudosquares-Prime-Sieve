@@ -13,11 +13,14 @@
 #include "hurchalla/montgomery_arithmetic/low_level_api/REDC.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyCommonBase.h"
 #include "hurchalla/montgomery_arithmetic/detail/MontyTags.h"
+#include "hurchalla/montgomery_arithmetic/detail/platform_specific/subtract_returning_difference_or_zero.h"
 #include "hurchalla/modular_arithmetic/modular_addition.h"
 #include "hurchalla/modular_arithmetic/modular_subtraction.h"
 #include "hurchalla/modular_arithmetic/absolute_value_difference.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/unsigned_multiply_to_hilo_product.h"
+#include "hurchalla/util/conditional_select.h"
+#include "hurchalla/util/cselect_on_bit.h"
 #include "hurchalla/util/compiler_macros.h"
 #include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <type_traits>
@@ -37,6 +40,19 @@ struct MontyFRValueTypes {
     // regular montgomery value type
     struct V : public BaseMontgomeryValue<T> {
         HURCHALLA_FORCE_INLINE V() = default;
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static V cselect_on_bit_ne0(uint64_t num, V v1, V v2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static V cselect_on_bit_eq0(uint64_t num, V v1, V v2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
      protected:
         template <typename> friend class MontyFullRange;
         HURCHALLA_FORCE_INLINE explicit V(T a) : BaseMontgomeryValue<T>(a) {}
@@ -48,6 +64,19 @@ struct MontyFRValueTypes {
             { return x.get() == y.get(); }
         HURCHALLA_FORCE_INLINE friend bool operator!=(const C& x, const C& y)
             { return !(x == y); }
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_ne0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_eq0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
      protected:
         template <template<class> class, template<class> class, typename>
           friend class MontyCommonBase;
@@ -79,7 +108,8 @@ struct MontyFRValueTypes {
 };
 
 
-// Let the theoretical constant R = 1<<(ut_numeric_limits<T>::digits).
+// Let the theoretical constant R = (UP)1 << ut_numeric_limits<T>::digits, where
+// UP is conceptually an unlimited precision unsigned integer type.
 template <typename T>
 class MontyFullRange final :
                   public MontyCommonBase<MontyFullRange, MontyFRValueTypes, T> {
@@ -205,9 +235,32 @@ class MontyFullRange final :
     {
         return add(x, x);
     }
-    HURCHALLA_FORCE_INLINE C two_times(C x) const
+    HURCHALLA_FORCE_INLINE C two_times(C cx) const
     {
-        return add(x, x);
+        return add(cx, cx);
+    }
+
+
+    HURCHALLA_FORCE_INLINE V halve(V x) const
+    {
+        T val = x.get();
+        T halfval = val >> 1;
+        HPBC_CLOCKWORK_INVARIANT2(n_ % 2 == 1);
+        T halfn_ceiling = 1 + (n_ >> 1);
+
+        T oddsum = halfval + halfn_ceiling;
+          // T retval = ((val & 1u) == 0) ? halfval : oddsum;
+        T retval = ::hurchalla::cselect_on_bit<0>::eq_0(
+                                   static_cast<uint64_t>(val), halfval, oddsum);
+
+        HPBC_CLOCKWORK_POSTCONDITION2(retval < n_);
+        return V(retval);
+    }
+    HURCHALLA_FORCE_INLINE C halve(C cx) const
+    {
+        V half = halve(static_cast<V>(cx));
+        HPBC_CLOCKWORK_POSTCONDITION2(isCanonical(half));
+        return C(half.get());
     }
 
 
@@ -216,7 +269,8 @@ class MontyFullRange final :
         return SV(x.get(), 0);
     }
 
-    HURCHALLA_FORCE_INLINE SV squareSV(SV sv) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    SV squareSV(SV sv, PTAG) const
     {
         // see squareToHiLo in MontyFullRangeMasked.h for basic ideas of
         // proof for why u_hi and u_lo are correct
@@ -229,14 +283,22 @@ class MontyFullRange final :
         T u_lo = sqlo;
         HPBC_CLOCKWORK_ASSERT2(u_hi < n_);
 
-        bool isNegative;
-        T res = hc::REDC_incomplete(isNegative, u_hi, u_lo, n_, BC::inv_n_);
-        T subtrahend = isNegative ? res : static_cast<T>(0);
-        SV result(res, subtrahend);
+        T minu, subt;
+        hc::REDC_incomplete(minu, subt, u_hi, u_lo, n_, BC::inv_n_, PTAG());
+#if 0
+        T diff = static_cast<T>(minu - subt);
+          // T subtrahend = (minu < subt) ? diff : static_cast<T>(0);
+        T subtrahend = hc::conditional_select((minu < subt), diff, static_cast<T>(0));
+#else
+        T diff;
+        T subtrahend = subtract_returning_difference_or_zero(diff, minu, subt);
+#endif
+        SV result(diff, subtrahend);
         return result;
     }
 
-    HURCHALLA_FORCE_INLINE V squareToMontgomeryValue(SV sv) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    V squareToMontgomeryValue(SV sv, PTAG) const
     {
         // see squareToHiLo in MontyFullRangeMasked.h for basic ideas of
         // proof for why u_hi and u_lo are correct
@@ -249,8 +311,7 @@ class MontyFullRange final :
         T u_lo = sqlo;
         HPBC_CLOCKWORK_ASSERT2(u_hi < n_);
 
-        T res = hc::REDC_standard(
-                               u_hi, u_lo, n_, BC::inv_n_, hc::LowlatencyTag());
+        T res = hc::REDC_standard(u_hi, u_lo, n_, BC::inv_n_, PTAG());
         V result(res);
         return result;
     }
@@ -259,7 +320,9 @@ class MontyFullRange final :
     // via squareToMontgomeryValue
     HURCHALLA_FORCE_INLINE V getMontgomeryValue(SV sv) const
     {
-        T nonneg_value = sv.get_subtrahend() != 0 ? sv.get() + n_ : sv.get();
+         //T nonneg_value = sv.get_subtrahend() != 0 ? sv.get() + n_ : sv.get();
+        T nonneg_value = ::hurchalla::conditional_select(
+                           (sv.get_subtrahend() != 0), sv.get() + n_, sv.get());
         return V(nonneg_value);
     }
 

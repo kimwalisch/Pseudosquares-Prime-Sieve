@@ -26,9 +26,11 @@
 namespace hurchalla { namespace detail {
 
 
-// For discussion purposes, let the unlimited precision constant R represent
-// R = 1<<(ut_numeric_limits<T>::digits).  For example, if T is uint64_t, then
-// R = 1<<64.
+// For discussion purposes, let type UP be a conceptually unlimited precision
+// unsigned integer type, and let the unlimited precision constant R represent
+// R = (UP)1 << ut_numeric_limits<T>::digits.  Equivalently,
+// R = (UP)ut_numeric_limits<T>::max + 1.  For example, if T is uint64_t, we
+// would have R = (UP)1 << 64.
 
 // Compute (R*R) % n
 
@@ -124,7 +126,7 @@ struct impl_get_Rsquared_mod_n<true, PTAG> {
             T u_hi, u_lo;
             u_hi = hc::unsigned_multiply_to_hilo_product(u_lo, tmp, tmp);
             // use the same logic as MontyQuarterRange's montyREDC():
-            tmp = hc::REDC_incomplete(u_hi, u_lo, n, inverse_n_modR);
+            tmp = hc::REDC_incomplete(u_hi, u_lo, n, inverse_n_modR, PTAG());
             tmp = static_cast<T>(tmp + n);
             HPBC_CLOCKWORK_ASSERT2(0 < tmp && tmp < static_cast<T>(2*n));
         }

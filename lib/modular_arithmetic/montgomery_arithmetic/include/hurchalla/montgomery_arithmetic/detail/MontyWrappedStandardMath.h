@@ -19,6 +19,7 @@
 #include "hurchalla/modular_arithmetic/absolute_value_difference.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
+#include "hurchalla/util/cselect_on_bit.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <type_traits>
 
@@ -39,6 +40,19 @@ class MontyWrappedStandardMath final {
 
     struct V : public BaseMontgomeryValue<T> {  // regular montgomery value type
         HURCHALLA_FORCE_INLINE V() = default;
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static V cselect_on_bit_ne0(uint64_t num, V v1, V v2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static V cselect_on_bit_eq0(uint64_t num, V v1, V v2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
      protected:
         friend MontyWrappedStandardMath;
         HURCHALLA_FORCE_INLINE explicit V(T a) : BaseMontgomeryValue<T>(a) {}
@@ -49,6 +63,19 @@ class MontyWrappedStandardMath final {
             { return x.get() == y.get(); }
         HURCHALLA_FORCE_INLINE friend bool operator!=(const C& x, const C& y)
             { return !(x == y); }
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_ne0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_eq0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
      protected:
         friend MontyWrappedStandardMath;
         HURCHALLA_FORCE_INLINE explicit C(T a) : V(a) {}
@@ -102,7 +129,8 @@ class MontyWrappedStandardMath final {
         else
             return V(static_cast<T>(a % modulus_));
     }
-    HURCHALLA_FORCE_INLINE T convertOut(V x) const
+    template <class PTAG>   // PTAG is ignored by this class
+    HURCHALLA_FORCE_INLINE T convertOut(V x, PTAG) const
     {
         HPBC_CLOCKWORK_PRECONDITION2(isCanonical(x));
         T ret = x.get();
@@ -110,7 +138,8 @@ class MontyWrappedStandardMath final {
         return ret;
     }
 
-    HURCHALLA_FORCE_INLINE T remainder(T a) const
+    template <class PTAG>   // PTAG is ignored by this class
+    HURCHALLA_FORCE_INLINE T remainder(T a, PTAG) const
     {
         return static_cast<T>(a % modulus_);
     }
@@ -257,21 +286,44 @@ class MontyWrappedStandardMath final {
         return add(cx, cx);
     }
 
+    HURCHALLA_FORCE_INLINE V halve(V x) const
+    {
+        C chalf = halve(getCanonicalValue(x));
+        return V(chalf);
+    }
+    HURCHALLA_FORCE_INLINE C halve(C cx) const
+    {
+        T val = cx.get();
+        T halfval = val >> 1;
+        HPBC_CLOCKWORK_INVARIANT2(modulus_ % 2 == 1);
+        T halfn_ceiling = 1 + (modulus_ >> 1);
+
+        T oddsum = halfval + halfn_ceiling;
+          // T retval = ((val & 1u) == 0) ? halfval : oddsum;
+        T retval = ::hurchalla::cselect_on_bit<0>::eq_0(
+                                   static_cast<uint64_t>(val), halfval, oddsum);
+
+        HPBC_CLOCKWORK_POSTCONDITION2(retval < modulus_);
+        return C(retval);
+    }
+
 
     HURCHALLA_FORCE_INLINE SV getSquaringValue(V x) const
     {
         static_assert(std::is_same<V, SV>::value, "");
         return x;
     }
-    HURCHALLA_FORCE_INLINE SV squareSV(SV sv) const
+    template <class PTAG>   // Performance TAG (ignored by this class)
+    HURCHALLA_FORCE_INLINE SV squareSV(SV sv, PTAG) const
     {
         static_assert(std::is_same<V, SV>::value, "");
-        return square(sv, LowlatencyTag());
+        return square(sv, PTAG());
     }
-    HURCHALLA_FORCE_INLINE V squareToMontgomeryValue(SV sv) const
+    template <class PTAG>   // Performance TAG (ignored by this class)
+    HURCHALLA_FORCE_INLINE V squareToMontgomeryValue(SV sv, PTAG) const
     {
         static_assert(std::is_same<V, SV>::value, "");
-        return square(sv, LowlatencyTag());
+        return square(sv, PTAG());
     }
     HURCHALLA_FORCE_INLINE V getMontgomeryValue(SV sv) const
     {
@@ -362,7 +414,7 @@ class MontyWrappedStandardMath final {
         T u_lo = static_cast<T>(tmp << power);
         int rshift = digitsT - power;
         HPBC_CLOCKWORK_ASSERT2(rshift > 0);
-        T u_hi = (tmp >> 1) >> (rshift - 1);
+        T u_hi = static_cast<T>(tmp >> 1) >> (rshift - 1);
         HPBC_CLOCKWORK_ASSERT2(u_hi < modulus_);
         // It's very strange to use REDC when this class is meant to wrap
         // standard arithmetic within the monty interface and not actually
@@ -374,7 +426,34 @@ class MontyWrappedStandardMath final {
         HPBC_CLOCKWORK_POSTCONDITION2(result < modulus_);
         return V(result);
     }
-    HURCHALLA_FORCE_INLINE T getMagicValue() const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    V twoPowLimited_times_x_v2(size_t exponent, C cx, PTAG) const
+    {
+        static constexpr int digitsT = ut_numeric_limits<T>::digits;
+        int power = static_cast<int>(exponent);
+        HPBC_CLOCKWORK_PRECONDITION2(0 < power && power <= digitsT);
+
+        T tmp = cx.get();
+        HPBC_CLOCKWORK_INVARIANT2(tmp < modulus_);
+        T u_lo = static_cast<T>(static_cast<T>(tmp << 1) << (power - 1));
+        int rshift = digitsT - power;
+        HPBC_CLOCKWORK_ASSERT2(0 <= rshift && rshift < digitsT);
+        T u_hi = static_cast<T>(tmp >> rshift);
+
+        HPBC_CLOCKWORK_ASSERT2(u_hi < modulus_);
+        // It's very strange to use REDC when this class is meant to wrap
+        // standard arithmetic within the monty interface and not actually
+        // use mont arith.  But we need REDC here, due to the extra R factor
+        // that is expected to be in cx whenever this function is called.
+        T inv_modulus = ::hurchalla::inverse_mod_R(modulus_);
+        T result = ::hurchalla::REDC_standard(u_hi, u_lo, modulus_, inv_modulus, PTAG());
+
+        HPBC_CLOCKWORK_POSTCONDITION2(result < modulus_);
+        return V(result);
+    }
+
+    template <class PTAG>   // Performance TAG (ignored by this class)
+    HURCHALLA_FORCE_INLINE T getMagicValue(PTAG) const
     {
         T result = ::hurchalla::get_R_mod_n(modulus_);
         HPBC_CLOCKWORK_POSTCONDITION2(result < modulus_);
@@ -383,7 +462,7 @@ class MontyWrappedStandardMath final {
     template <class PTAG>   // Performance TAG (ignored by this class)
     HURCHALLA_FORCE_INLINE V convertInExtended_aTimesR(T a, T RmodN, PTAG) const
     {
-        HPBC_CLOCKWORK_PRECONDITION2(RmodN == getMagicValue());
+        HPBC_CLOCKWORK_PRECONDITION2(RmodN == getMagicValue(PTAG()));
         T tmp = a;
         if (tmp >= modulus_)
             tmp = static_cast<T>(tmp % modulus_);
@@ -411,7 +490,7 @@ class MontyWrappedStandardMath final {
     template <class PTAG> HURCHALLA_FORCE_INLINE
     V RTimesTwoPowLimited(size_t exponent, T RmodN, PTAG) const
     {
-        HPBC_CLOCKWORK_PRECONDITION2(RmodN == getMagicValue());
+        HPBC_CLOCKWORK_PRECONDITION2(RmodN == getMagicValue(PTAG()));
         static constexpr int digitsT = ut_numeric_limits<T>::digits;
         int power = static_cast<int>(exponent);
         HPBC_CLOCKWORK_PRECONDITION2(0 <= power && power < digitsT);

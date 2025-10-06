@@ -30,10 +30,15 @@ public:
 
     IntegerType max_modulus() const { return pimpl->max_modulus(); }
     IntegerType getModulus() const { return pimpl->getModulus(); }
+
+    template <class PTAG = LowlatencyTag>
     MontgomeryValue convertIn(IntegerType a) const
-        { return pimpl->convertIn(a); }
+        { return pimpl->template convertIn<PTAG>(a); }
+
+    template <class PTAG = LowlatencyTag>
     IntegerType convertOut(MontgomeryValue x) const
-        { return pimpl->convertOut(x); }
+        { return pimpl->template convertOut<PTAG>(x); }
+
     CanonicalValue getCanonicalValue(MontgomeryValue x) const
         { return pimpl->getCanonicalValue(x); }
     FusingValue getFusingValue(MontgomeryValue x) const
@@ -81,6 +86,11 @@ public:
         { return pimpl->two_times(x); }
     CanonicalValue two_times(CanonicalValue x) const
         { return pimpl->two_times(x); }
+
+    MontgomeryValue halve(MontgomeryValue x) const
+        { return pimpl->halve(x); }
+    CanonicalValue halve(CanonicalValue x) const
+        { return pimpl->halve(x); }
 
     template <class PTAG = LowlatencyTag>
     MontgomeryValue multiply(MontgomeryValue x, MontgomeryValue y) const
@@ -137,8 +147,9 @@ public:
     IntegerType gcd_with_modulus(MontgomeryValue x, const F& gcd_functor) const
         { return pimpl->gcd_with_modulus(x, gcd_functor); }
 
+    template <class PTAG = LowlatencyTag>
     IntegerType remainder(IntegerType a) const
-        { return pimpl->remainder(a); }
+        { return pimpl->template remainder<PTAG>(a); }
 };
 
 

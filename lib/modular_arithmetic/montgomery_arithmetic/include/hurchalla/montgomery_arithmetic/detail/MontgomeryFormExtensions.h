@@ -25,14 +25,15 @@ namespace hurchalla { namespace detail {
 template <class MF, class PTAG>
 struct MontgomeryFormExtensions final {
 
-    using RU = typename MF::RU;
-    // conceptually, R = 1 << (ut_numeric_limits<RU>::digits)
+    using RU = typename MF::MontType::uint_type;
+    // conceptually, R = (UP)1 << ut_numeric_limits<RU>::digits, with UP as an
+    // unlimited precision unsigned integer type.
     static_assert(ut_numeric_limits<RU>::is_integer, "");
     static_assert(!(ut_numeric_limits<RU>::is_signed), "");
 
     using CanonicalValue = typename MF::CanonicalValue;
     using MontgomeryValue = typename MF::MontgomeryValue;
-    using SquaringValue = typename MF::SV;
+    using SquaringValue = typename MF::MontType::squaringvalue_type;
 
     HURCHALLA_FORCE_INLINE
     static MontgomeryValue convertInExtended(const MF& mf, RU a)
@@ -67,12 +68,18 @@ struct MontgomeryFormExtensions final {
         HPBC_CLOCKWORK_PRECONDITION(exponent < ut_numeric_limits<RU>::digits);
         return mf.impl.template twoPowLimited_times_x<PTAG>(exponent, x);
     }
+    HURCHALLA_FORCE_INLINE
+    static MontgomeryValue twoPowLimited_times_x_v2(const MF& mf, size_t exponent, CanonicalValue x)
+    {
+        HPBC_CLOCKWORK_PRECONDITION(0 < exponent && exponent <= ut_numeric_limits<RU>::digits);
+        return mf.impl.template twoPowLimited_times_x_v2<PTAG>(exponent, x);
+    }
 
     // note: magicValue is R cubed mod N  (in normal integer form)
     HURCHALLA_FORCE_INLINE
     static RU getMagicValue(const MF& mf)
     {
-        return mf.impl.getMagicValue();
+        return mf.impl.template getMagicValue<PTAG>();
     }
 
     HURCHALLA_FORCE_INLINE
@@ -117,14 +124,14 @@ struct MontgomeryFormExtensions final {
     HURCHALLA_FORCE_INLINE
     static SquaringValue squareSV(const MF& mf, SquaringValue sv)
     {
-        return mf.impl.squareSV(sv);
+        return mf.impl.template squareSV<PTAG>(sv);
     }
 
     HURCHALLA_FORCE_INLINE
     static MontgomeryValue
     squareToMontgomeryValue(const MF& mf, SquaringValue sv)
     {
-        return mf.impl.squareToMontgomeryValue(sv);
+        return mf.impl.template squareToMontgomeryValue<PTAG>(sv);
     }
 
     HURCHALLA_FORCE_INLINE

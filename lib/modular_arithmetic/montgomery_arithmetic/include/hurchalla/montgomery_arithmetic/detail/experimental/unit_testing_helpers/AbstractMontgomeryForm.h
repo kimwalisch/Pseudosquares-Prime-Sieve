@@ -20,11 +20,14 @@
 #include "hurchalla/util/traits/is_equality_comparable.h"
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/traits/extensible_make_unsigned.h"
+#include "hurchalla/util/conditional_select.h"
+#include "hurchalla/util/cselect_on_bit.h"
 #include "hurchalla/util/compiler_macros.h"
 #include <type_traits>
 #include <array>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 
 namespace hurchalla {
 
@@ -52,6 +55,18 @@ struct AMFValueTypes {
               // value = cond ? v.value : value
             value = ::hurchalla::conditional_select<U, PerfTag>(cond,v.value,value);
         }
+        template <int BITNUM>
+        static V cselect_on_bit_ne0(uint64_t num, V v1, V v2)
+        {
+            U sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
+        template <int BITNUM>
+        static V cselect_on_bit_eq0(uint64_t num, V v1, V v2)
+        {
+            U sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
     };
     // canonical montgomery value type
     struct C : public V {
@@ -60,6 +75,19 @@ struct AMFValueTypes {
             { return x.get() == y.get(); }
         friend bool operator!=(const C& x, const C& y)
             { return !(x == y); }
+
+        template <int BITNUM>
+        static C cselect_on_bit_ne0(uint64_t num, C c1, C c2)
+        {
+            U sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
+        template <int BITNUM>
+        static C cselect_on_bit_eq0(uint64_t num, C c1, C c2)
+        {
+            U sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
      protected:
         template<bool> friend class AbstractMontgomeryForm;
         explicit C(U a) : V(a) {}
@@ -128,10 +156,6 @@ public:
 
     virtual IntegerType getModulus() const = 0;
 
-    virtual MontgomeryValue convertIn(IntegerType a) const = 0;
-
-    virtual IntegerType convertOut(MontgomeryValue x) const = 0;
-
     virtual CanonicalValue getCanonicalValue(MontgomeryValue x) const = 0;
 
     virtual FusingValue getFusingValue(MontgomeryValue x) const = 0;
@@ -168,15 +192,22 @@ public:
 
     virtual CanonicalValue two_times(CanonicalValue x) const = 0;
 
+    virtual MontgomeryValue halve(MontgomeryValue x) const = 0;
+
+    virtual CanonicalValue halve(CanonicalValue x) const = 0;
+
     virtual MontgomeryValue pow(MontgomeryValue base, IntegerType exponent)
         const = 0;
 
     virtual MontgomeryValue two_pow(IntegerType exponent) const = 0;
 
-    virtual IntegerType remainder(IntegerType a) const = 0;
-
-
 private:
+    virtual MontgomeryValue convertIn(IntegerType a,
+        bool useLowlatencyTag) const = 0;
+
+    virtual IntegerType convertOut(MontgomeryValue x,
+        bool useLowlatencyTag) const = 0;
+
     virtual MontgomeryValue subtract(MontgomeryValue x, MontgomeryValue y,
         bool useLowlatencyTag) const = 0;
 
@@ -216,6 +247,9 @@ private:
     virtual MontgomeryValue fusedSquareAdd(MontgomeryValue x, CanonicalValue cv,
         bool useLowlatencyTag) const = 0;
 
+    virtual IntegerType remainder(IntegerType a,
+        bool useLowlatencyTag) const = 0;
+
     virtual CanonicalValue inverse(MontgomeryValue x,
         bool useLowlatencyTag) const = 0;
 
@@ -228,6 +262,18 @@ private:
 public:
 // adapters for functions that have template params; we wrap the virtual funcs
 // since virtual funcs can't be templated.
+
+    template <class PTAG = LowuopsTag>
+    MontgomeryValue convertIn(IntegerType a) const
+    {
+        return convertIn(a, std::is_same<PTAG, LowlatencyTag>::value);
+    }
+
+    template <class PTAG = LowuopsTag>
+    IntegerType convertOut(MontgomeryValue x) const
+    {
+        return convertOut(x, std::is_same<PTAG, LowlatencyTag>::value);
+    }
 
     template <class PTAG = LowuopsTag>
     MontgomeryValue subtract(MontgomeryValue x, MontgomeryValue y) const
@@ -308,6 +354,12 @@ public:
     CanonicalValue inverse(MontgomeryValue x) const
     {
         return inverse(x, std::is_same<PTAG, LowlatencyTag>::value);
+    }
+
+    template <class PTAG = LowlatencyTag>
+    IntegerType remainder(IntegerType a) const
+    {
+        return remainder(a, std::is_same<PTAG, LowlatencyTag>::value);
     }
 
     template <std::size_t NUM_BASES>

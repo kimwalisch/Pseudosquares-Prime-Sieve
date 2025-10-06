@@ -21,16 +21,20 @@
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/traits/extensible_make_signed.h"
 #include "hurchalla/util/unsigned_multiply_to_hilo_product.h"
+#include "hurchalla/util/cselect_on_bit.h"
 #include "hurchalla/util/compiler_macros.h"
 #include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <type_traits>
 
 namespace hurchalla { namespace detail {
 
+// For discussion purposes, let type UP be a conceptually unlimited precision
+// unsigned integer type, and let the unlimited precision constant R represent
+// R = (UP)1 << ut_numeric_limits<T>::digits.  Equivalently,
+// R = (UP)ut_numeric_limits<T>::max + 1.  For example, if T is uint64_t, we
+// would have R = (UP)1 << 64.
 
-// The name "Quarterrange" signifies that the modulus must be less than R/4,
-// where  R = 1<<(ut_numeric_limits<T>::digits).  For example, if T is uint64_t
-// then R = 1<<64 and R/4 == 1<<62, and thus it would require  modulus < 1<<62.
+// The name "Quarterrange" signifies that the modulus must be less than R/4.
 
 // The MontyQuarterRange class functions require/allow an unusual input range:
 // for an input x, they allow  0 <= x < 2*n, where n is the modulus.  Similarly,
@@ -55,6 +59,19 @@ struct MontyQRValueTypes {
     // regular montgomery value type
     struct V : public BaseMontgomeryValue<T> {
         HURCHALLA_FORCE_INLINE V() = default;
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static V cselect_on_bit_ne0(uint64_t num, V v1, V v2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static V cselect_on_bit_eq0(uint64_t num, V v1, V v2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, v1.get(), v2.get());
+            return V(sel);
+        }
      protected:
         template <typename> friend class MontyQuarterRange;
         HURCHALLA_FORCE_INLINE explicit V(T a) : BaseMontgomeryValue<T>(a) {}
@@ -66,6 +83,19 @@ struct MontyQRValueTypes {
             { return x.get() == y.get(); }
         HURCHALLA_FORCE_INLINE friend bool operator!=(const C& x, const C& y)
             { return !(x == y); }
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_ne0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_eq0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
      protected:
         template <template<class> class, template<class> class, typename>
           friend class MontyCommonBase;
@@ -82,7 +112,6 @@ struct MontyQRValueTypes {
 };
 
 
-// Let the theoretical constant R = 1<<(ut_numeric_limits<T>::digits).
 template <typename T>
 class MontyQuarterRange final : public
                       MontyCommonBase<MontyQuarterRange, MontyQRValueTypes, T> {
@@ -312,20 +341,78 @@ class MontyQuarterRange final : public
     }
 
 
+    HURCHALLA_FORCE_INLINE V halve(V x) const
+    {
+        constexpr T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
+                                            (ut_numeric_limits<T>::digits - 2));
+        HPBC_CLOCKWORK_INVARIANT2(0 <= n_ && n_ < Rdiv4);
+
+        T val = x.get();
+        HPBC_CLOCKWORK_ASSERT2(0 <= val && val < 2*n_);
+
+        T evenhalf = val >> 1;
+        HPBC_CLOCKWORK_ASSERT2(n_ % 2 == 1);
+        // Since val < 2*n  and  n < Rdiv4,  (val + n) < 3*n < R.
+        // So we know the addition won't overflow.
+        T oddhalf = static_cast<T>(val + n_) >> 1;
+        // since val < 2*n,  (val + n)/2 <= (3*n - 1)/2 == (4*n - n - 1)/2 < 2*n
+        HPBC_CLOCKWORK_ASSERT2(oddhalf < 2*n_);
+        // if val is odd and < n, then oddhalf works fine of course.
+        // if val is odd and n <= val < 2*n,
+        //   then we could subtract n, which would be congruent to val, and then
+        //   halve that.  val2 = (val - n)/2.  This would work since (val - n)
+        //   for our case here is even.
+        //   Let val3 = (val - n)/2 + n == (val - n + 2*n)/2 == (val + n)/2,
+        //   which is oddhalf.
+        //   So oddhalf is congruent mod n to our desired answer val2.
+        //   And we know by the assertion above that oddhalf fits in V.
+
+          // T retval = ((val & 1u) == 0) ? evenhalf : oddhalf;
+        T retval = ::hurchalla::cselect_on_bit<0>::eq_0(
+                                 static_cast<uint64_t>(val), evenhalf, oddhalf);
+
+        HPBC_CLOCKWORK_POSTCONDITION2(retval < 2*n_);
+        return V(retval);
+    }
+    HURCHALLA_FORCE_INLINE C halve(C cx) const
+    {
+        constexpr T Rdiv4 = static_cast<T>(static_cast<T>(1) <<
+                                            (ut_numeric_limits<T>::digits - 2));
+        HPBC_CLOCKWORK_INVARIANT2(0 <= n_ && n_ < Rdiv4);
+
+        T val = cx.get();
+        HPBC_CLOCKWORK_ASSERT2(0 <= val && val < n_);
+        T evenhalf = val >> 1;
+        HPBC_CLOCKWORK_ASSERT2(n_ % 2 == 1);
+        // since val < n  and  n < Rdiv4,  val + n < R,
+        //   so the sum (val + n) won't overflow.
+        // since val < n,  (val + n)/2 < n.
+        T oddhalf = static_cast<T>(val + n_) >> 1;
+          // T retval = ((val & 1u) == 0) ? evenhalf : oddhalf;
+        T retval = ::hurchalla::cselect_on_bit<0>::eq_0(
+                                 static_cast<uint64_t>(val), evenhalf, oddhalf);
+
+        HPBC_CLOCKWORK_POSTCONDITION2(retval < n_);
+        return C(retval);
+    }
+
+
     HURCHALLA_FORCE_INLINE SV getSquaringValue(V x) const
     {
         static_assert(std::is_same<V, SV>::value, "");
         return x;
     }
-    HURCHALLA_FORCE_INLINE SV squareSV(SV sv) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    SV squareSV(SV sv, PTAG) const
     {
         static_assert(std::is_same<V, SV>::value, "");
-        return BC::square(sv, LowlatencyTag());
+        return BC::square(sv, PTAG());
     }
-    HURCHALLA_FORCE_INLINE V squareToMontgomeryValue(SV sv) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    V squareToMontgomeryValue(SV sv, PTAG) const
     {
         static_assert(std::is_same<V, SV>::value, "");
-        return BC::square(sv, LowlatencyTag());
+        return BC::square(sv, PTAG());
     }
     HURCHALLA_FORCE_INLINE V getMontgomeryValue(SV sv) const
     {
@@ -343,7 +430,7 @@ private:
     {
         HPBC_CLOCKWORK_PRECONDITION2(u_hi < n_);  // verifies that (u_hi*R + u_lo) < n*R
         namespace hc = ::hurchalla;
-        T result = hc::REDC_incomplete(u_hi, u_lo, n_, BC::inv_n_);
+        T result = hc::REDC_incomplete(u_hi, u_lo, n_, BC::inv_n_, PTAG());
         resultIsZero = (result == 0);
         T sum = static_cast<T>(result + n_);
         HPBC_CLOCKWORK_POSTCONDITION2(0 < sum && sum < static_cast<T>(2*n_));

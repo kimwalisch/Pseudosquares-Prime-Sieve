@@ -18,10 +18,13 @@
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/traits/safely_promote_unsigned.h"
 #include "hurchalla/util/conditional_select.h"
+#include "hurchalla/util/cselect_on_bit.h"
 #include "hurchalla/util/unsigned_multiply_to_hilo_product.h"
 #include "hurchalla/util/compiler_macros.h"
 #include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <type_traits>
+#include <cstdint>
+#include <array>
 
 namespace hurchalla { namespace detail {
 
@@ -60,6 +63,68 @@ struct MfrmValueTypes {
             signmask = ::hurchalla::conditional_select<T, PerfTag>(
                                                     cond, v.signmask, signmask);
         }
+        // cselect_on_bit_ne0() for up to 64 bit T
+        template <int BITNUM, typename Tp = T>
+        HURCHALLA_FORCE_INLINE static
+        typename std::enable_if<ut_numeric_limits<Tp>::digits <= 64, V>::type
+        cselect_on_bit_ne0(uint64_t num, V v1, V v2)
+        {
+            std::array<uint64_t, 2> arg1 =
+                 { static_cast<uint64_t>(v1.lowbits), static_cast<uint64_t>(v1.signmask) };
+            std::array<uint64_t, 2> arg2 =
+                 { static_cast<uint64_t>(v2.lowbits), static_cast<uint64_t>(v2.signmask) };
+            std::array<uint64_t, 2> tmp = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, arg1, arg2);
+            return V(static_cast<T>(tmp[0]), static_cast<T>(tmp[1]));
+        }
+        // cselect_on_bit_ne0() for 128 bit T
+        template <int BITNUM, typename Tp = T>
+        HURCHALLA_FORCE_INLINE static
+        typename std::enable_if<(ut_numeric_limits<Tp>::digits > 64) &&
+                                (ut_numeric_limits<Tp>::digits <= 128), V>::type
+        cselect_on_bit_ne0(uint64_t num, V v1, V v2)
+        {
+            std::array<uint64_t, 4> arg1 =
+                 { static_cast<uint64_t>(v1.lowbits), static_cast<uint64_t>(v1.lowbits >> 64),
+                   static_cast<uint64_t>(v1.signmask), static_cast<uint64_t>(v1.signmask >> 64) };
+            std::array<uint64_t, 4> arg2 =
+                 { static_cast<uint64_t>(v2.lowbits), static_cast<uint64_t>(v2.lowbits >> 64),
+                   static_cast<uint64_t>(v2.signmask), static_cast<uint64_t>(v2.signmask >> 64) };
+            std::array<uint64_t, 4> tmp = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, arg1, arg2);
+            T bits = (static_cast<T>(tmp[1]) << 64) | static_cast<T>(tmp[0]);
+            T smask = (static_cast<T>(tmp[3]) << 64) | static_cast<T>(tmp[2]);
+            return V(bits, smask);
+        }
+        // cselect_on_bit_eq0() for up to 64 bit T
+        template <int BITNUM, typename Tp = T>
+        HURCHALLA_FORCE_INLINE static
+        typename std::enable_if<ut_numeric_limits<Tp>::digits <= 64, V>::type
+        cselect_on_bit_eq0(uint64_t num, V v1, V v2)
+        {
+            std::array<uint64_t, 2> arg1 =
+                 { static_cast<uint64_t>(v1.lowbits), static_cast<uint64_t>(v1.signmask) };
+            std::array<uint64_t, 2> arg2 =
+                 { static_cast<uint64_t>(v2.lowbits), static_cast<uint64_t>(v2.signmask) };
+            std::array<uint64_t, 2> tmp = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, arg1, arg2);
+            return V(static_cast<T>(tmp[0]), static_cast<T>(tmp[1]));
+        }
+        // cselect_on_bit_eq0() for 128 bit T
+        template <int BITNUM, typename Tp = T>
+        HURCHALLA_FORCE_INLINE static
+        typename std::enable_if<(ut_numeric_limits<Tp>::digits > 64) &&
+                                (ut_numeric_limits<Tp>::digits <= 128), V>::type
+        cselect_on_bit_eq0(uint64_t num, V v1, V v2)
+        {
+            std::array<uint64_t, 4> arg1 =
+                 { static_cast<uint64_t>(v1.lowbits), static_cast<uint64_t>(v1.lowbits >> 64),
+                   static_cast<uint64_t>(v1.signmask), static_cast<uint64_t>(v1.signmask >> 64) };
+            std::array<uint64_t, 4> arg2 =
+                 { static_cast<uint64_t>(v2.lowbits), static_cast<uint64_t>(v2.lowbits >> 64),
+                   static_cast<uint64_t>(v2.signmask), static_cast<uint64_t>(v2.signmask >> 64) };
+            std::array<uint64_t, 4> tmp = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, arg1, arg2);
+            T bits = (static_cast<T>(tmp[1]) << 64) | static_cast<T>(tmp[0]);
+            T smask = (static_cast<T>(tmp[3]) << 64) | static_cast<T>(tmp[2]);
+            return V(bits, smask);
+        }
      protected:
         friend struct C;
         friend struct FV;
@@ -81,6 +146,19 @@ struct MfrmValueTypes {
             { return x.get() == y.get(); }
         HURCHALLA_FORCE_INLINE friend bool operator!=(const C& x, const C& y)
             { return !(x == y); }
+
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_ne0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::ne_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
+        template <int BITNUM>
+        HURCHALLA_FORCE_INLINE static C cselect_on_bit_eq0(uint64_t num, C c1, C c2)
+        {
+            T sel = ::hurchalla::cselect_on_bit<BITNUM>::eq_0(num, c1.get(), c2.get());
+            return C(sel);
+        }
      protected:
         template <typename> friend class MontyFullRangeMasked;
         template <template<class> class, template<class> class, typename>
@@ -99,7 +177,8 @@ struct MfrmValueTypes {
 };
 
 
-// Let the theoretical constant R = 1<<(ut_numeric_limits<T>::digits).
+// Let the theoretical constant R = (UP)1 << (ut_numeric_limits<T>::digits),
+// where UP is a conceptual unlimited precision integer type.
 template <typename T>
 class MontyFullRangeMasked final :
            public MontyCommonBase<MontyFullRangeMasked, MfrmValueTypes, T> {
@@ -271,20 +350,45 @@ class MontyFullRangeMasked final :
     }
 
 
+    HURCHALLA_FORCE_INLINE V halve(V x) const
+    {
+        C chalf = halve(getCanonicalValue(x));
+        return V(chalf);
+    }
+    HURCHALLA_FORCE_INLINE C halve(C cx) const
+    {
+        // this is mostly a copy of MontyFullRange's halve()
+        T val = cx.get();
+        T halfval = val >> 1;
+        HPBC_CLOCKWORK_INVARIANT2(n_ % 2 == 1);
+        T halfn_ceiling = 1 + (n_ >> 1);
+
+        T oddsum = halfval + halfn_ceiling;
+          // T retval = ((val & 1u) == 0) ? halfval : oddsum;
+        T retval = ::hurchalla::cselect_on_bit<0>::eq_0(
+                                   static_cast<uint64_t>(val), halfval, oddsum);
+
+        HPBC_CLOCKWORK_POSTCONDITION2(retval < n_);
+        return C(retval);
+    }
+
+
     HURCHALLA_FORCE_INLINE SV getSquaringValue(V x) const
     {
         static_assert(std::is_same<V, SV>::value, "");
         return x;
     }
-    HURCHALLA_FORCE_INLINE SV squareSV(SV sv) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    SV squareSV(SV sv, PTAG) const
     {
         static_assert(std::is_same<V, SV>::value, "");
-        return BC::square(sv, LowlatencyTag());
+        return BC::square(sv, PTAG());
     }
-    HURCHALLA_FORCE_INLINE V squareToMontgomeryValue(SV sv) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    V squareToMontgomeryValue(SV sv, PTAG) const
     {
         static_assert(std::is_same<V, SV>::value, "");
-        return BC::square(sv, LowlatencyTag());
+        return BC::square(sv, PTAG());
     }
     HURCHALLA_FORCE_INLINE V getMontgomeryValue(SV sv) const
     {
@@ -300,10 +404,11 @@ private:
     V montyREDC(bool& resultIsZero, T u_hi, T u_lo, PTAG) const
     {
         HPBC_CLOCKWORK_PRECONDITION2(u_hi < n_);  // verifies that (u_hi*R + u_lo) < n*R
-        bool isNegative;
-        T resultval = ::hurchalla::REDC_incomplete(
-                                        isNegative, u_hi, u_lo, n_, BC::inv_n_);
-        T result_smask = static_cast<T>(0 - static_cast<T>(isNegative));
+        namespace hc = ::hurchalla;
+        T minuend, subtrahend;
+        hc::REDC_incomplete(minuend, subtrahend, u_hi, u_lo, n_, BC::inv_n_, PTAG());
+        T resultval = static_cast<T>(minuend - subtrahend);
+        T result_smask = static_cast<T>(0 - static_cast<T>(minuend < subtrahend));
         resultIsZero = (resultval == 0);
         V result = V(resultval, result_smask);
         HPBC_CLOCKWORK_POSTCONDITION2(isValid(result));
@@ -325,7 +430,7 @@ private:
         T umlo;
         T umhi = ::hurchalla::unsigned_multiply_to_hilo_product(umlo, a, a);
         T masked_a = static_cast<T>(x.getmask() & a);
-        T result_hi = static_cast<T>(umhi - static_cast<T>(2) * masked_a);
+        T result_hi = static_cast<T>(umhi - masked_a - masked_a);
         u_lo = umlo;
         // Complete details are in the proof below, but roughly what we do here
         // is get a*a as a two-word product (umhi, umlo).  We let s == 1 if x is

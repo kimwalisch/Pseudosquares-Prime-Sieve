@@ -21,15 +21,21 @@
 #include "hurchalla/util/traits/ut_numeric_limits.h"
 #include "hurchalla/util/unsigned_multiply_to_hilo_product.h"
 #include "hurchalla/util/compiler_macros.h"
+#include "hurchalla/util/branchless_shift_left.h"
+#include "hurchalla/util/branchless_shift_right.h"
+#include "hurchalla/util/branchless_large_shift_left.h"
+#include "hurchalla/util/branchless_small_shift_right.h"
 #include "hurchalla/modular_arithmetic/detail/clockwork_programming_by_contract.h"
 #include <type_traits>
 
 namespace hurchalla { namespace detail {
 
 
-// For discussion purposes throughout this file, given an unsigned integral type
-// T, let R = 1<<(ut_numeric_limits<T>::digits).  For example: if T is uint64_t
-// then R = 1<<64.  The name 'R' is based on the wikipedia presentation
+// For discussion purposes throughout this file, let the unlimited precision
+// constant R represent R = (UP)1 << ut_numeric_limits<T>::digits, where UP is
+// an imaginary unlimited precision unsigned integer type.  Equivalently,
+// R = (UP)ut_numeric_limits<T>::max + 1.  As an example if T us uint64_t, then
+// R = (UP)1 << 64.  The name 'R' is based on the wikipedia presentation
 // https://en.wikipedia.org/wiki/Montgomery_modular_multiplication
 //
 // This base class uses the CRTP idiom
@@ -93,25 +99,29 @@ class MontyCommonBase {
         return result;
     }
 
-    HURCHALLA_FORCE_INLINE T convertOut(V x) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    T convertOut(V x, PTAG) const
     {
         T u_hi = 0;
         // get a Natural number (i.e. number >= 0) congruent to x (mod n)
         T u_lo = static_cast<const D*>(this)->getNaturalEquivalence(x);
         namespace hc = ::hurchalla;
-        bool isNegative;
-        T result = hc::REDC_incomplete(isNegative, u_hi, u_lo, n_, inv_n_);
+
+        T minuend, subtrahend;
+        hc::REDC_incomplete(minuend, subtrahend, u_hi, u_lo, n_, inv_n_, PTAG());
+        T result = static_cast<T>(minuend - subtrahend);
         // Because u_hi == 0, we should expect the following 'if' to be very
         // well predicted.
-        if (isNegative)
+        if (minuend < subtrahend)
             result = static_cast<T>(result + n_);
-        HPBC_CLOCKWORK_ASSERT2(result==hc::REDC_standard(u_hi,u_lo,n_,inv_n_));
+        HPBC_CLOCKWORK_ASSERT2(result == hc::REDC_standard(u_hi, u_lo, n_, inv_n_, PTAG()));
 
         HPBC_CLOCKWORK_POSTCONDITION2(result < n_);
         return result;
     }
 
-    HURCHALLA_FORCE_INLINE T remainder(T a) const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    T remainder(T a, PTAG) const
     {
         HPBC_CLOCKWORK_INVARIANT2(r_mod_n_ < n_);
         namespace hc = ::hurchalla;
@@ -120,7 +130,7 @@ class MontyCommonBase {
         // Since a is type T, 0 <= a < R.  And since r_mod_n is type T and
         // r_mod_n < n, we know  0 <= r_mod_n < n.  Therefore,
         // 0 <= u == a * r_mod_n < R*n,  which will satisfy REDC's precondition.
-        T result = hc::REDC_standard(u_hi, u_lo, n_, inv_n_, LowlatencyTag());
+        T result = hc::REDC_standard(u_hi, u_lo, n_, inv_n_, PTAG());
 
         HPBC_CLOCKWORK_POSTCONDITION2(result < n_);
         return result;
@@ -491,10 +501,10 @@ class MontyCommonBase {
 
         T tmp = cx.get();
         HPBC_CLOCKWORK_INVARIANT2(tmp < n_);
-        T u_lo = static_cast<T>(tmp << power);
+        T u_lo = branchless_shift_left(tmp, power);
         int rshift = digitsT - power;
         HPBC_CLOCKWORK_ASSERT2(rshift > 0);
-        T u_hi = (tmp >> 1) >> (rshift - 1);
+        T u_hi = static_cast<T>(branchless_shift_right(tmp, rshift - 1) >> 1);
 
         HPBC_CLOCKWORK_ASSERT2(u_hi < n_);
         const D* child = static_cast<const D*>(this);
@@ -502,8 +512,30 @@ class MontyCommonBase {
         HPBC_CLOCKWORK_POSTCONDITION2(child->isValid(result));
         return result;
     }
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    V twoPowLimited_times_x_v2(size_t exponent, C cx, PTAG) const
+    {
+        static constexpr int digitsT = ut_numeric_limits<T>::digits;
+        int power = static_cast<int>(exponent);
+        HPBC_CLOCKWORK_PRECONDITION2(0 < power && power <= digitsT);
+
+        T tmp = cx.get();
+        HPBC_CLOCKWORK_INVARIANT2(tmp < n_);
+        T u_lo = branchless_shift_left(static_cast<T>(tmp << 1), power - 1);
+        int rshift = digitsT - power;
+        HPBC_CLOCKWORK_ASSERT2(0 <= rshift && rshift < digitsT);
+        T u_hi = branchless_shift_right(tmp, rshift);
+
+        HPBC_CLOCKWORK_ASSERT2(u_hi < n_);
+        const D* child = static_cast<const D*>(this);
+        V result = child->montyREDC(u_hi, u_lo, PTAG());
+        HPBC_CLOCKWORK_POSTCONDITION2(child->isValid(result));
+        return result;
+    }
+
     // returns (R*R*R) mod N
-    HURCHALLA_FORCE_INLINE T getMagicValue() const
+    template <class PTAG> HURCHALLA_FORCE_INLINE
+    T getMagicValue(PTAG) const
     {
         HPBC_CLOCKWORK_INVARIANT2(r_squared_mod_n_ < n_);
         namespace hc = ::hurchalla;
@@ -511,7 +543,7 @@ class MontyCommonBase {
         T u_hi = hc::unsigned_multiply_to_hilo_product(u_lo,
                                             r_squared_mod_n_, r_squared_mod_n_);
         HPBC_CLOCKWORK_ASSERT2(u_hi < n_);  // verify that (u_hi*R + u_lo) < n*R
-        T result = hc::REDC_standard(u_hi, u_lo, n_, inv_n_, LowlatencyTag());
+        T result = hc::REDC_standard(u_hi, u_lo, n_, inv_n_, PTAG());
         HPBC_CLOCKWORK_POSTCONDITION2(result < n_);
         return result;
     }
@@ -521,7 +553,7 @@ class MontyCommonBase {
     V convertInExtended_aTimesR(T a, T magicValue, PTAG) const
     {
         // see convertIn() comments for explanation
-        HPBC_CLOCKWORK_PRECONDITION2(magicValue == getMagicValue());
+        HPBC_CLOCKWORK_PRECONDITION2(magicValue == getMagicValue(PTAG()));
         HPBC_CLOCKWORK_ASSERT2(magicValue < n_);
         namespace hc = ::hurchalla;
         T u_lo;
@@ -543,10 +575,10 @@ class MontyCommonBase {
         int power = static_cast<int>(exponent);
         HPBC_CLOCKWORK_PRECONDITION2(0 <= power && power < digitsT);
 
-        T u_lo = static_cast<T>(r_squared_mod_n_ << power);
+        T u_lo = branchless_shift_left(r_squared_mod_n_, power);
         int rshift = digitsT - power;
         HPBC_CLOCKWORK_ASSERT2(rshift > 0);
-        T u_hi = (r_squared_mod_n_ >> 1) >> (rshift - 1);
+        T u_hi = branchless_shift_right(static_cast<T>(r_squared_mod_n_ >> 1), rshift - 1);
 
         HPBC_CLOCKWORK_ASSERT2(u_hi < n_);
         const D* child = static_cast<const D*>(this);
@@ -557,16 +589,16 @@ class MontyCommonBase {
     template <class PTAG> HURCHALLA_FORCE_INLINE
     V RTimesTwoPowLimited(size_t exponent, T magicValue, PTAG) const
     {
-        HPBC_CLOCKWORK_PRECONDITION2(magicValue == getMagicValue());
+        HPBC_CLOCKWORK_PRECONDITION2(magicValue == getMagicValue(PTAG()));
         HPBC_CLOCKWORK_ASSERT2(magicValue < n_);
         static constexpr int digitsT = ut_numeric_limits<T>::digits;
         int power = static_cast<int>(exponent);
         HPBC_CLOCKWORK_PRECONDITION2(0 <= power && power < digitsT);
 
-        T u_lo = static_cast<T>(magicValue << power);
+        T u_lo = branchless_shift_left(magicValue, power);
         int rshift = digitsT - power;
         HPBC_CLOCKWORK_ASSERT2(rshift > 0);
-        T u_hi = (magicValue >> 1) >> (rshift - 1);
+        T u_hi = branchless_shift_right(static_cast<T>(magicValue >> 1), rshift - 1);
 
         HPBC_CLOCKWORK_ASSERT2(u_hi < n_);
         const D* child = static_cast<const D*>(this);

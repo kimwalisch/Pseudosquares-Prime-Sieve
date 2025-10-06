@@ -203,26 +203,6 @@ public:
         return mf.getModulus();
     }
 
-    virtual V convertIn(T a) const override
-    {
-        HPBC_CLOCKWORK_PRECONDITION2(0 <= a);
-        if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
-            // kind of an unavoidable hack, so that AbstractMontgomeryForm has
-            // the same contract for convertIn() as MongomeryForm, which allows
-            // 'a' to have any value of T >= 0.
-            if (a > ut_numeric_limits<MFT>::max())
-                a = a % getModulus();
-        }
-        OpenMFV x(mf.convertIn(static_cast<MFT>(a)));
-        // note that x.get() might be signed or unsigned; OpenV::OT is unsigned
-        return OpenV(static_cast<typename OpenV::OT>(x.get()));
-    }
-
-    virtual T convertOut(V x) const override
-    {
-        return mf.convertOut(OpenMFV(OpenV(x)));
-    }
-
     virtual C getCanonicalValue(V x) const override
     {
         OpenMFC mfc(mf.getCanonicalValue(OpenMFV(OpenV(x))));
@@ -335,6 +315,20 @@ public:
         return OpenC(static_cast<typename OpenC::OT>(mfc.get()));
     }
 
+    virtual V halve(V x) const override
+    {
+        OpenMFV mfv(mf.halve(OpenMFV(OpenV(x))));
+        // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
+        return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
+    }
+
+    virtual C halve(C x) const override
+    {
+        OpenMFC mfc(mf.halve(OpenMFC(OpenC(x))));
+        // note: mfc.get() might be signed or unsigned; OpenC::OT is unsigned
+        return OpenC(static_cast<typename OpenC::OT>(mfc.get()));
+    }
+
     virtual V two_pow(T exponent) const override
     {
         HPBC_CLOCKWORK_PRECONDITION2(0 <= exponent);
@@ -388,20 +382,35 @@ public:
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
     }
 
-    virtual T remainder(T a) const override
+private:
+    virtual V convertIn(T a, bool useLowlatencyTag) const override
     {
         HPBC_CLOCKWORK_PRECONDITION2(0 <= a);
         if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
             // kind of an unavoidable hack, so that AbstractMontgomeryForm has
-            // the same contract for remainder() as MongomeryForm, which allows
+            // the same contract for convertIn() as MongomeryForm, which allows
             // 'a' to have any value of T >= 0.
             if (a > ut_numeric_limits<MFT>::max())
-                return a % getModulus();
+                a = a % getModulus();
         }
-        return mf.remainder(static_cast<MFT>(a));
+        OpenMFV mfv;
+        if (useLowlatencyTag)
+            mfv = OpenMFV(mf.template convertIn<LowlatencyTag>(static_cast<MFT>(a)));
+        else
+            mfv = OpenMFV(mf.template convertIn<LowuopsTag>(static_cast<MFT>(a)));
+        // note that mfv.get() might be signed or unsigned; OpenV::OT is unsigned
+        return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
     }
 
-private:
+    virtual T convertOut(V x, bool useLowlatencyTag) const override
+    {
+        T a;
+        if (useLowlatencyTag)
+            a = mf.template convertOut<LowlatencyTag>(OpenMFV(OpenV(x)));
+        else
+            a = mf.template convertOut<LowuopsTag>(OpenMFV(OpenV(x)));
+        return a;
+    }
 
     virtual V subtract(V x, V y, bool useLowlatencyTag) const override
     {
@@ -467,7 +476,7 @@ private:
             mfv = mfv2;
         } else {
             OpenMFV mfv2(mf.template multiply<LowuopsTag>(OpenMFV(OpenV(x)), OpenMFV(OpenV(y))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -484,7 +493,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template multiply<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFV(OpenV(y)), resultIsZero));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -500,7 +509,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template fmsub<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFV(OpenV(y)), OpenMFC(OpenC(z))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -516,7 +525,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template fmsub<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFV(OpenV(y)), OpenMFFV(OpenFV(z))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -532,7 +541,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template fmadd<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFV(OpenV(y)), OpenMFC(OpenC(z))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -548,7 +557,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template fmadd<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFV(OpenV(y)), OpenMFFV(OpenFV(z))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -562,7 +571,7 @@ private:
             mfv = mfv2;
         } else {
             OpenMFV mfv2(mf.template square<LowuopsTag>(OpenMFV(OpenV(x))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -578,7 +587,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template fusedSquareSub<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFC(OpenC(cv))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -594,7 +603,7 @@ private:
         } else {
             OpenMFV mfv2(mf.template fusedSquareAdd<LowuopsTag>(OpenMFV(OpenV(x)),
                 OpenMFC(OpenC(cv))));
-            mfv = mfv2;            
+            mfv = mfv2;
         }
         // note: mfv.get() might be signed or unsigned; OpenV::OT is unsigned
         return OpenV(static_cast<typename OpenV::OT>(mfv.get()));
@@ -614,6 +623,23 @@ private:
         return OpenC(static_cast<typename OpenC::OT>(mfc.get()));
     }
 
+    virtual T remainder(T a, bool useLowlatencyTag) const override
+    {
+        HPBC_CLOCKWORK_PRECONDITION2(0 <= a);
+        if (ut_numeric_limits<T>::max() > ut_numeric_limits<MFT>::max()) {
+            // kind of an unavoidable hack, so that AbstractMontgomeryForm has
+            // the same contract for remainder() as MongomeryForm, which allows
+            // 'a' to have any value of T >= 0.
+            if (a > ut_numeric_limits<MFT>::max())
+                return a % getModulus();
+        }
+        T result;
+        if (useLowlatencyTag)
+            result = mf.template remainder<LowlatencyTag>(static_cast<MFT>(a));
+        else
+            result = mf.template remainder<LowuopsTag>(static_cast<MFT>(a));
+        return result;
+    }
 
     // This class (ConcreteMontgomeryForm) only supports calling vectorPow()
     // with a std::vector that has size equal to one of the sizes given by the
