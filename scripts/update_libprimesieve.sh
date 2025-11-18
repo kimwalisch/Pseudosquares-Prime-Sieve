@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run from primecount root directory
+# Run from root directory
 test -e ../lib && cd ..
 
 # Exit immediately if a command exits with a non-zero status
