@@ -55,7 +55,7 @@ struct Option
     try {
       return calculator::eval<T>(val);
     }
-    catch (std::exception&) {
+    catch (std::exception& e) {
       throw std::runtime_error("invalid option '" + opt + "=" + val + "'\n" + e.what());
     }
   }
