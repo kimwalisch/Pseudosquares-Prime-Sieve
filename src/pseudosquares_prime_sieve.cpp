@@ -268,7 +268,7 @@ void initialize(uint128_t stop,
     // n / (n^(1/4.5) * log(n^(1/4.5))) < 4.2 * 10^24
     // n < 1.74083 * 10^33
     if (stop / s >= pseudosquares.back().Lp)
-        throw std::runtime_error("pseudosquares_prime_sieve: n/s must be < max(Lp)");
+        throw std::runtime_error("n/s must be < max(Lp)");
 
     // Pick the prime p so that Lp such that n/s < Lp
     for (const auto& pss : pseudosquares)
@@ -361,7 +361,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     // pseudosqaures up to max(Lp) = L_373 our implementation
     // requires n <= 1.73 * 10^33, see initialize().
     if ((double) stop > 1.73 * 1e33)
-        throw std::runtime_error("pseudosquares_prime_sieve: stop must be <= 1.73 * 10^33");
+        throw std::runtime_error("stop must be <= 1.73 * 10^33");
 
     uint64_t count = 0;
 

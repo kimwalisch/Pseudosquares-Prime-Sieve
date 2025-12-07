@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "pseudosquares_prime_sieve: " << e.what() << std::endl;
         std::cerr << "Try 'pseudosquares_prime_sieve --help' for more information." << std::endl;
     }
 
