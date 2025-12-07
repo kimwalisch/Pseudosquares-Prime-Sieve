@@ -67,7 +67,9 @@ find_package(Threads REQUIRED QUIET)
 ######################################################################
 
 # Source files
-set(SRC_FILES src/main.cpp src/pseudosquares_prime_sieve.cpp)
+set(SRC_FILES src/main.cpp
+              src/CmdOptions.cpp
+              src/pseudosquares_prime_sieve.cpp)
 
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
