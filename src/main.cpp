@@ -45,7 +45,7 @@ void help(int exit_code)
 
 void version()
 {
-  std::cout << "pseudosquares_prime_sieve 0.1";
+  std::cout << "pseudosquares_prime_sieve 1.0";
   std::cout << ", <https://github.com/kimwalisch/Pseudosquares-Prime-Sieve>" << std::endl;
   std::cout << "Copyright (C) 2025 Kim Walisch" << std::endl;
   std::cout << "BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>" << std::endl;
