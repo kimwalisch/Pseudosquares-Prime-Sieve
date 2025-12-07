@@ -9,6 +9,8 @@ project(pseudosquares_prime_sieve CXX)
 # manager.
 option(BUILD_LIBPRIMESIEVE "Build libprimesieve" ON)
 
+get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
 # Build in release mode by default
 if(NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING
