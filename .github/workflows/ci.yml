@@ -56,6 +56,9 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - name: Enable Git long paths on Windows
+        run: git config --system core.longpaths true
+        shell: cmd # Use the standard cmd shell for the Git configuration command
       - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
