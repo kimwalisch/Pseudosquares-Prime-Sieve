@@ -21,6 +21,7 @@
 
 #include <primesieve.hpp>
 
+#include <array>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
@@ -318,7 +319,37 @@ bool pseudosquares_prime_test_montgomery(uint128_t n,
         return false;
 
     // For 3 <= pi ≤ p: pi^((n−1)/2) mod n
-    for (std::size_t i = 1; primes[i] <= p; i++)
+    // Process 4 bases at a time to expose instruction-level
+    // parallelism in Montgomery modular exponentiation.
+    std::size_t i = 1;
+    for (; primes[i + 3] <= p; i += 4)
+    {
+        using MontgomeryValue = typename Montgomery::MontgomeryValue;
+        std::array<MontgomeryValue, 4> bases =
+        {{
+            mf.convertIn((T) primes[i]),
+            mf.convertIn((T) primes[i + 1]),
+            mf.convertIn((T) primes[i + 2]),
+            mf.convertIn((T) primes[i + 3])
+        }};
+        auto results = mf.pow(bases, e);
+
+        // Preserve the original test order and early-exit semantics.
+        for (std::size_t j = 0; j < results.size(); j++)
+        {
+            res = mf.getCanonicalValue(results[j]);
+
+            // Condition (4) for n ≡ 1 mod 8: found -1 result
+            if ((n & 7) == 1 && res == minus1)
+                return true;
+            // Condition (3): pi^((n−1)/2) ≡ ±1 mod n
+            if (res != one && res != minus1)
+                return false;
+        }
+    }
+
+    // Scalar tail for any remaining prime bases.
+    for (; primes[i] <= p; i++)
     {
         res = modpow(mf, primes[i], e);
 
