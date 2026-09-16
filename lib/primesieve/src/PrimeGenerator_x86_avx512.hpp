@@ -1,7 +1,7 @@
 ///
 /// @file PrimeGenerator_x86_avx512.hpp
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -56,7 +56,7 @@ void PrimeGenerator::fillNextPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
     uint64_t low = low_;
     uint64_t sieveIdx = sieveIdx_;
     uint64_t sieveSize = sieve_.size();
-    uint8_t* sieve = sieve_.data();
+    const uint64_t* sieve = sieve_.data();
 
     __m512i avxBitValues = _mm512_set_epi8(
       (char) 241, (char) 239, (char) 233, (char) 229,
@@ -89,8 +89,8 @@ void PrimeGenerator::fillNextPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
     while (sieveIdx < sieveSize)
     {
       // Each iteration processes 8 bytes from the sieve array
-      uint64_t bits64 = *(uint64_t*) &sieve[sieveIdx];
-      uint64_t primeCount = popcnt64(bits64);
+      uint64_t bits64 = sieve[sieveIdx];
+      uint64_t primeCount = popcnt64_native(bits64);
 
       // Prevent _mm512_storeu_si512() buffer overrun
       if (i + primeCount > maxSize - 8)
@@ -103,7 +103,7 @@ void PrimeGenerator::fillNextPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
       // iteration, increment for next iteration.
       i += primeCount;
       low += 8 * 30;
-      sieveIdx += 8;
+      sieveIdx++;
 
       // Convert 1 bits from the sieve array (bits64) into prime
       // bit values (bytes) using the avxBitValues lookup table and
@@ -112,56 +112,56 @@ void PrimeGenerator::fillNextPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
 
       // Convert the first 8 bytes (prime bit values)
       // into eight 64-bit prime numbers.
-      __m512i vprimes0 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_0_to_7, bitValues);
+      __m512i vprimes0 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_0_to_7, bitValues);
       vprimes0 = _mm512_add_epi64(base, vprimes0);
       _mm512_storeu_si512(&primes64[0], vprimes0);
 
       if (primeCount <= 8)
         continue;
 
-      __m512i vprimes1 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_8_to_15, bitValues);
+      __m512i vprimes1 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_8_to_15, bitValues);
       vprimes1 = _mm512_add_epi64(base, vprimes1);
       _mm512_storeu_si512(&primes64[8], vprimes1);
 
       if (primeCount <= 16)
         continue;
 
-      __m512i vprimes2 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_16_to_23, bitValues);
+      __m512i vprimes2 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_16_to_23, bitValues);
       vprimes2 = _mm512_add_epi64(base, vprimes2);
       _mm512_storeu_si512(&primes64[16], vprimes2);
 
       if (primeCount <= 24)
         continue;
 
-      __m512i vprimes3 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_24_to_31, bitValues);
+      __m512i vprimes3 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_24_to_31, bitValues);
       vprimes3 = _mm512_add_epi64(base, vprimes3);
       _mm512_storeu_si512(&primes64[24], vprimes3);
 
       if (primeCount <= 32)
         continue;
 
-      __m512i vprimes4 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_32_to_39, bitValues);
+      __m512i vprimes4 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_32_to_39, bitValues);
       vprimes4 = _mm512_add_epi64(base, vprimes4);
       _mm512_storeu_si512(&primes64[32], vprimes4);
 
       if (primeCount <= 40)
         continue;
 
-      __m512i vprimes5 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_40_to_47, bitValues);
+      __m512i vprimes5 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_40_to_47, bitValues);
       vprimes5 = _mm512_add_epi64(base, vprimes5);
       _mm512_storeu_si512(&primes64[40], vprimes5);
 
       if (primeCount <= 48)
         continue;
 
-      __m512i vprimes6 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_48_to_55, bitValues);
+      __m512i vprimes6 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_48_to_55, bitValues);
       vprimes6 = _mm512_add_epi64(base, vprimes6);
       _mm512_storeu_si512(&primes64[48], vprimes6);
 
       if (primeCount <= 56)
         continue;
 
-      __m512i vprimes7 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_56_to_63, bitValues);
+      __m512i vprimes7 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_56_to_63, bitValues);
       vprimes7 = _mm512_add_epi64(base, vprimes7);
       _mm512_storeu_si512(&primes64[56], vprimes7);
     }
@@ -195,7 +195,7 @@ void PrimeGenerator::fillPrevPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
     uint64_t low = low_;
     uint64_t sieveIdx = sieveIdx_;
     uint64_t sieveSize = sieve_.size();
-    uint8_t* sieve = sieve_.data();
+    const uint64_t* sieve = sieve_.data();
 
     __m512i avxBitValues = _mm512_set_epi8(
       (char) 241, (char) 239, (char) 233, (char) 229,
@@ -228,8 +228,8 @@ void PrimeGenerator::fillPrevPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
     while (sieveIdx < sieveSize)
     {
       // Each iteration processes 8 bytes from the sieve array
-      uint64_t bits64 = *(uint64_t*) &sieve[sieveIdx];
-      uint64_t primeCount = popcnt64(bits64);
+      uint64_t bits64 = sieve[sieveIdx];
+      uint64_t primeCount = popcnt64_native(bits64);
 
       // Prevent _mm512_storeu_si512() buffer overrun
       if_unlikely(i + primeCount + 8 > primes.size())
@@ -242,7 +242,7 @@ void PrimeGenerator::fillPrevPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
       // iteration, increment for next iteration.
       i += primeCount;
       low += 8 * 30;
-      sieveIdx += 8;
+      sieveIdx++;
 
       // Convert 1 bits from the sieve array (bits64) into prime
       // bit values (bytes) using the avxBitValues lookup table and
@@ -251,56 +251,56 @@ void PrimeGenerator::fillPrevPrimes_x86_avx512(Vector<uint64_t>& primes, std::si
 
       // Convert the first 8 bytes (prime bit values)
       // into eight 64-bit prime numbers.
-      __m512i vprimes0 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_0_to_7, bitValues);
+      __m512i vprimes0 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_0_to_7, bitValues);
       vprimes0 = _mm512_add_epi64(base, vprimes0);
       _mm512_storeu_si512(&primes64[0], vprimes0);
 
       if (primeCount <= 8)
         continue;
 
-      __m512i vprimes1 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_8_to_15, bitValues);
+      __m512i vprimes1 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_8_to_15, bitValues);
       vprimes1 = _mm512_add_epi64(base, vprimes1);
       _mm512_storeu_si512(&primes64[8], vprimes1);
 
       if (primeCount <= 16)
         continue;
 
-      __m512i vprimes2 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_16_to_23, bitValues);
+      __m512i vprimes2 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_16_to_23, bitValues);
       vprimes2 = _mm512_add_epi64(base, vprimes2);
       _mm512_storeu_si512(&primes64[16], vprimes2);
 
       if (primeCount <= 24)
         continue;
 
-      __m512i vprimes3 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_24_to_31, bitValues);
+      __m512i vprimes3 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_24_to_31, bitValues);
       vprimes3 = _mm512_add_epi64(base, vprimes3);
       _mm512_storeu_si512(&primes64[24], vprimes3);
 
       if (primeCount <= 32)
         continue;
 
-      __m512i vprimes4 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_32_to_39, bitValues);
+      __m512i vprimes4 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_32_to_39, bitValues);
       vprimes4 = _mm512_add_epi64(base, vprimes4);
       _mm512_storeu_si512(&primes64[32], vprimes4);
 
       if (primeCount <= 40)
         continue;
 
-      __m512i vprimes5 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_40_to_47, bitValues);
+      __m512i vprimes5 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_40_to_47, bitValues);
       vprimes5 = _mm512_add_epi64(base, vprimes5);
       _mm512_storeu_si512(&primes64[40], vprimes5);
 
       if (primeCount <= 48)
         continue;
 
-      __m512i vprimes6 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_48_to_55, bitValues);
+      __m512i vprimes6 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_48_to_55, bitValues);
       vprimes6 = _mm512_add_epi64(base, vprimes6);
       _mm512_storeu_si512(&primes64[48], vprimes6);
 
       if (primeCount <= 56)
         continue;
 
-      __m512i vprimes7 = _mm512_maskz_permutexvar_epi8(0x0101010101010101ull, bytes_56_to_63, bitValues);
+      __m512i vprimes7 = _mm512_maskz_permutexvar_epi8(0x0101010101010101, bytes_56_to_63, bitValues);
       vprimes7 = _mm512_add_epi64(base, vprimes7);
       _mm512_storeu_si512(&primes64[56], vprimes7);
     }

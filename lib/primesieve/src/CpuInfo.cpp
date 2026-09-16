@@ -18,7 +18,7 @@
 ///         types of CPU cores we try to detect the cache sizes of the
 ///         CPU core type that e.g. occurs most frequently.
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -26,13 +26,15 @@
 
 #include "CpuInfo.hpp"
 #include <primesieve/macros.hpp>
+#include <primesieve/Vector.hpp>
 
 #include <algorithm>
 #include <stdint.h>
 #include <cstddef>
 #include <exception>
 #include <string>
-#include <vector>
+
+using namespace primesieve;
 
 #if defined(__APPLE__) && \
     __has_include(<sys/sysctl.h>)
@@ -65,10 +67,10 @@ std::string getCpuName()
 
   int cpuInfo[4] = { 0, 0, 0, 0 };
   __cpuidex(cpuInfo, 0x80000000, 0);
-  std::vector<int> vect;
+  Vector<int> vect;
 
   // check if CPU name is supported
-  if ((unsigned) cpuInfo[0] >= 0x80000004u)
+  if ((unsigned) cpuInfo[0] >= 0x80000004)
   {
     __cpuidex(cpuInfo, 0x80000002, 0);
     std::copy_n(cpuInfo, 4, std::back_inserter(vect));
@@ -129,9 +131,9 @@ void CpuInfo::init()
   if (!bytes)
     return;
 
-  std::vector<char> buffer(bytes);
+  Vector<char> buffer(bytes);
 
-  if (!glpiex(RelationCache, (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*) &buffer[0], &bytes))
+  if (!glpiex(RelationCache, (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*) buffer.data(), &bytes))
     return;
 
   struct CpuCoreCacheInfo
@@ -161,7 +163,7 @@ void CpuInfo::init()
   // sizes and cache sharing of each CPU core.
   for (std::size_t i = 0; i < bytes; i += info->Size)
   {
-    info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*) &buffer[i];
+    info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*) &buffer.at(i);
 
     if (info->Relationship == RelationCache &&
         info->Cache.Level >= 1 &&
@@ -273,9 +275,9 @@ void CpuInfo::init()
 
   std::size_t threadsPerCore = 0;
   std::size_t size = bytes / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
-  std::vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> info(size);
+  Vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> info(size);
 
-  if (!glpi(&info[0], &bytes))
+  if (!glpi(info.data(), &bytes))
     return;
 
   for (std::size_t i = 0; i < size; i++)
@@ -347,20 +349,20 @@ namespace {
 /// https://www.freebsd.org/cgi/man.cgi?sysctl(3)
 ///
 template <typename T>
-std::vector<T> getSysctl(const std::string& name)
+Vector<T> getSysctl(const std::string& name)
 {
-  std::vector<T> res;
+  Vector<T> buffer;
   std::size_t bytes = 0;
 
   if (!sysctlbyname(name.data(), 0, &bytes, 0, 0))
   {
     std::size_t size = ceilDiv(bytes, sizeof(T));
-    std::vector<T> buffer(size, 0);
-    if (!sysctlbyname(name.data(), buffer.data(), &bytes, 0, 0))
-      res = buffer;
+    buffer.resize(size);
+    if (sysctlbyname(name.data(), buffer.data(), &bytes, 0, 0))
+      buffer.clear();
   }
 
-  return res;
+  return buffer;
 }
 
 std::string getCpuName()
@@ -407,8 +409,6 @@ void CpuInfo::init()
 #include <map>
 #include <set>
 #include <sstream>
-
-using namespace primesieve;
 
 namespace {
 
@@ -458,7 +458,7 @@ std::size_t getCacheSize(const std::string& filename)
   if (!str.empty())
   {
     val = std::stoul(str);
-    char lastChar = str.back();
+    unsigned char lastChar = str.back();
 
     // The last character may be:
     // 'K' = KiB (kibibyte)
@@ -470,7 +470,7 @@ std::size_t getCacheSize(const std::string& filename)
       case 'M': val *= 1 << 20; break;
       case 'G': val *= 1 << 30; break;
       default:
-        if (!isdigit(lastChar))
+        if (!std::isdigit(lastChar))
           throw primesieve_error("invalid cache size: " + str);
     }
   }
@@ -544,11 +544,11 @@ std::string getCpuName()
   return notFound;
 }
 
-std::vector<std::string> split(const std::string& str,
-                               char delimiter)
+Vector<std::string> split(const std::string& str,
+                          char delimiter)
 {
   std::string token;
-  std::vector<std::string> tokens;
+  Vector<std::string> tokens;
   std::istringstream tokenStream(str);
 
   while (std::getline(tokenStream, token, delimiter))
@@ -639,7 +639,7 @@ void CpuInfo::init()
   using CacheSize_t = std::size_t;
   // Items must be sorted in ascending order
   std::map<CacheSize_t, std::size_t> l1CacheSizes;
-  std::vector<std::size_t> cpuIds;
+  Vector<std::size_t> cpuIds;
   cpuIds.reserve(3);
 
   // Based on my tests, for hybrid CPUs the Linux kernel always lists
@@ -759,7 +759,7 @@ CpuInfo::CpuInfo() :
     // We don't trust the operating system to reliably report
     // all CPU information. In case an unexpected error
     // occurs we continue without relying on CpuInfo and
-    // primesieve will fallback to using default CPU settings
+    // primesieve will fall back to using default CPU settings
     // e.g. 32 KiB L1 data cache size.
     error_ = e.what();
   }
@@ -770,7 +770,7 @@ std::string CpuInfo::cpuName() const
   try
   {
     // On Linux we get the CPU name by parsing /proc/cpuinfo
-    // which can be quite slow on PCs without fast SSD.
+    // which can be quite slow on PCs without a fast SSD.
     // For this reason we don't initialize the CPU name at
     // startup but instead we lazy load it when needed.
     return getCpuName();
@@ -820,6 +820,7 @@ std::string CpuInfo::getError() const
 {
   return error_;
 }
+
 bool CpuInfo::hasCpuName() const
 {
   return !cpuName().empty();

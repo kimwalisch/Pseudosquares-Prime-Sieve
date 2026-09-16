@@ -6,7 +6,7 @@
 ///         to reconstruct primes and prime k-tuplets from 1 bits of
 ///         the sieve array.
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -18,14 +18,15 @@
 #include "SievingPrimes.hpp"
 
 #include <primesieve/forward.hpp>
-#include <primesieve/littleendian_cast.hpp>
 #include <primesieve/macros.hpp>
 #include <primesieve/pmath.hpp>
+#include <primesieve/util.hpp>
 
 #include <stdint.h>
 #include <algorithm>
 #include <iostream>
-#include <sstream>
+
+using namespace primesieve;
 
 namespace {
 
@@ -40,6 +41,55 @@ const uint64_t bitmasks[6][5] =
 };
 
 } // namespace
+
+#if __cplusplus >= 201703L && \
+    __has_include(<charconv>)
+
+#include <primesieve.hpp>
+#include <charconv>
+
+namespace {
+
+/// Appends a uint64_t prime to the char vector as a decimal
+/// string. This implementation uses std::to_chars() for
+/// fast, zero-allocation and zero-copy conversion directly
+/// into the vector's pre-reserved buffer memory.
+///
+ALWAYS_INLINE void append_prime_as_string(Vector<char>& vect, uint64_t prime)
+{
+  std::size_t old_size = vect.size();
+
+  // Converting a 64-bit integer to a string
+  // requires at most 20 characters.
+  vect.resize(old_size + 20);
+  char* first = &vect[old_size];
+  char* last = vect.end();
+
+  std::to_chars_result res = std::to_chars(first, last, prime);
+
+  if (res.ec == std::errc{})
+    vect.resize(vect.size() - (last - res.ptr));
+  else
+    throw primesieve_error("append_prime_as_string(): failed to convert prime to string!");
+}
+
+} // namespace
+
+#else
+
+#include <string>
+
+namespace {
+
+ALWAYS_INLINE void append_prime_as_string(Vector<char>& vect, uint64_t prime)
+{
+  std::string str = std::to_string(prime);
+  vect.insert(vect.end(), str.begin(), str.end());
+}
+
+} // namespace
+
+#endif
 
 namespace primesieve {
 
@@ -83,7 +133,7 @@ void CountPrintPrimes::initCounts()
 void CountPrintPrimes::sieve()
 {
   uint64_t sieveSize = ps_.getSieveSize();
-  SievingPrimes sievingPrimes(this, sieveSize, memoryPool_);
+  INDETERMINATE SievingPrimes sievingPrimes(this, sieveSize, memoryPool_);
   uint64_t prime = sievingPrimes.next();
 
   while (hasNextSegment())
@@ -97,7 +147,7 @@ void CountPrintPrimes::sieve()
     sieveSegment();
 
     if (ps_.isCountPrimes())
-      countPrimes();
+      counts_[0] += popcount(sieve_);
     if (ps_.isCountkTuplets())
       countkTuplets();
     if (ps_.isPrintPrimes())
@@ -105,15 +155,8 @@ void CountPrintPrimes::sieve()
     if (ps_.isPrintkTuplets())
       printkTuplets();
     if (ps_.isStatus())
-      ps_.updateStatus(sieve_.size() * 30);
+      ps_.updateStatus(sieve_.size() * 240);
   }
-}
-
-void CountPrintPrimes::countPrimes()
-{
-  ASSERT(sieve_.capacity() % sizeof(uint64_t) == 0);
-  uint64_t size = ceilDiv(sieve_.size(), 8);
-  counts_[0] += popcount((const uint64_t*) sieve_.data(), size);
 }
 
 void CountPrintPrimes::countkTuplets()
@@ -123,11 +166,11 @@ void CountPrintPrimes::countkTuplets()
   {
     if (ps_.isCount(i))
     {
-      ASSERT(sieve_.capacity() % 4 == 0);
-      auto* sieve = sieve_.data();
+      const uint8_t* sieve = (const uint8_t*) sieve_.data();
+      std::size_t sieveBytes = sieve_.size() * sizeof(uint64_t);
       uint64_t sum = 0;
 
-      for (std::size_t j = 0; j < sieve_.size(); j += 4)
+      for (std::size_t j = 0; j < sieveBytes; j += 4)
       {
         sum += kCounts_[i][sieve[j+0]];
         sum += kCounts_[i][sieve[j+1]];
@@ -141,61 +184,78 @@ void CountPrintPrimes::countkTuplets()
 }
 
 /// Print primes to stdout
-void CountPrintPrimes::printPrimes() const
+void CountPrintPrimes::printPrimes()
 {
   uint64_t low = low_;
   std::size_t i = 0;
 
   while (i < sieve_.size())
   {
-    std::size_t size = i + (1 << 16);
+    charBuffer_.clear();
+    std::size_t size = i + (1 << 13);
     size = std::min(size, sieve_.size());
-    std::ostringstream primes;
 
-    for (; i < size; i += 8)
+    for (; i < size; i++)
     {
-      uint64_t bits = littleendian_cast<uint64_t>(&sieve_[i]);
+      uint64_t bits = to_littleendian(sieve_[i]);
+
       for (; bits != 0; bits &= bits - 1)
-        primes << nextPrime(bits, low) << '\n';
+      {
+        uint64_t prime = nextPrime(bits, low);
+        append_prime_as_string(charBuffer_, prime);
+        charBuffer_.push_back('\n');
+      }
 
       low += 8 * 30;
     }
 
-    std::cout << primes.str();
+    std::cout.write(charBuffer_.data(), charBuffer_.size());
   }
 }
 
 /// Print prime k-tuplets to stdout
-void CountPrintPrimes::printkTuplets() const
+void CountPrintPrimes::printkTuplets()
 {
   // i = 1 twins, i = 2 triplets, ...
   unsigned i = 1;
   uint64_t low = low_;
-  std::ostringstream kTuplets;
+  charBuffer_.clear();
+  const uint8_t* sieve = (const uint8_t*) sieve_.data();
+  std::size_t sieveBytes = sieve_.size() * sizeof(uint64_t);
 
   while (!ps_.isPrint(i))
     i++;
 
-  for (std::size_t j = 0; j < sieve_.size(); j++, low += 30)
+  for (std::size_t j = 0; j < sieveBytes; j++, low += 30)
   {
-    for (auto* bitmask = bitmasks[i]; *bitmask <= sieve_[j]; bitmask++)
+    for (auto* bitmask = bitmasks[i]; *bitmask <= sieve[j]; bitmask++)
     {
-      if ((sieve_[j] & *bitmask) == *bitmask)
+      if ((sieve[j] & *bitmask) == *bitmask)
       {
-        kTuplets << "(";
+        charBuffer_.push_back('(');
         uint64_t bits = *bitmask;
 
         for (; bits != 0; bits &= bits - 1)
         {
-          kTuplets << nextPrime(bits, low);
-          bool hasNext = (bits & (bits - 1)) != 0;
-          kTuplets << (hasNext ? ", " : ")\n");
+          uint64_t prime = nextPrime(bits, low);
+          append_prime_as_string(charBuffer_, prime);
+
+          if (bits & (bits - 1))
+          {
+            charBuffer_.push_back(',');
+            charBuffer_.push_back(' ');
+          }
+          else
+          {
+            charBuffer_.push_back(')');
+            charBuffer_.push_back('\n');
+          }
         }
       }
     }
   }
 
-  std::cout << kTuplets.str();
+  std::cout.write(charBuffer_.data(), charBuffer_.size());
 }
 
 } // namespace

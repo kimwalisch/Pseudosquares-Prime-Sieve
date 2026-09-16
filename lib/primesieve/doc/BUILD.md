@@ -14,7 +14,7 @@
 
 # Prerequisites
 
-You need to have installed a C++ compiler which supports C++11 (or later) and CMake ≥ 3.4.
+You need to have installed a C++ compiler which supports C++11 (or later) and CMake ≥ 3.9.
 
 <table>
     <tr>
@@ -113,7 +113,6 @@ option(BUILD_EXAMPLES    "Build example programs"        OFF)
 option(BUILD_TESTS       "Build test programs"           OFF)
 
 option(WITH_MULTIARCH       "Enable runtime dispatching to fastest supported CPU instruction set" ON)
-option(WITH_MSVC_CRT_STATIC "Link primesieve.lib with /MT instead of the default /MD" OFF)
 ```
 
 # Run the tests

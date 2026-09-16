@@ -1,7 +1,6 @@
 # primesieve
 
 [![Build status](https://github.com/kimwalisch/primesieve/actions/workflows/ci.yml/badge.svg)](https://github.com/kimwalisch/primesieve/actions/workflows/ci.yml) [![Build status](https://github.com/kimwalisch/primesieve/actions/workflows/benchmark.yml/badge.svg)](https://github.com/kimwalisch/primesieve/actions/workflows/benchmark.yml)
-[![Github Releases](https://img.shields.io/github/release/kimwalisch/primesieve.svg)](https://github.com/kimwalisch/primesieve/releases)
 [![C API Documentation](https://img.shields.io/badge/docs-C_API-blue)](doc/C_API.md)
 [![C++ API Documentation](https://img.shields.io/badge/docs-C++_API-blue)](doc/CPP_API.md)
 
@@ -80,6 +79,11 @@ primesieve 1000000 --print=2
 primesieve 1e10 --dist=2^32 --count=3
 ```
 
+Note that printing primes and storing them in a text file are not primesieve's primary
+use cases: both run single-threaded as printing requires sequential ordering, and both
+use the same standard output path rather than file-specific I/O optimizations. For
+maximum throughput, generate primes in memory using [libprimesieve](doc/C_API.md).
+
 ## Stress testing
 
 primesieve includes support for stress testing both the CPU and memory. This feature
@@ -149,7 +153,7 @@ Options:
 ## Build instructions
 
 You need to have installed a C++ compiler which supports C++11 (or later)
-and CMake ≥ 3.4.
+and CMake ≥ 3.9.
 
 ```sh
 cmake .

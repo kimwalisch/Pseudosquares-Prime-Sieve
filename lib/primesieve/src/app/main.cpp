@@ -9,13 +9,13 @@
 ///
 ///         How to add a new command-line option:
 ///
-///         1) Add a new option enum in CmdOptions.h.
+///         1) Add a new option enum in CmdOptions.hpp.
 ///         2) Add your option to parseOptions() in CmdOptions.cpp.
 ///         3) Add your option to main() in main.cpp.
 ///         4) Document your option in help.cpp (--help option summary)
 ///            and in doc/primesieve.txt (manpage).
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -26,6 +26,7 @@
 #include <CpuInfo.hpp>
 #include <ParallelSieve.hpp>
 #include <RiemannR.hpp>
+#include <primesieve/macros.hpp>
 #include <primesieve/primesieve_error.hpp>
 #include <primesieve/Vector.hpp>
 
@@ -41,7 +42,7 @@
 namespace primesieve {
 
 bool has_arm_sve();
-  
+
 } // namespace
 
 #endif
@@ -50,7 +51,7 @@ bool has_arm_sve();
 
 namespace primesieve {
 
-bool has_cpuid_avx512_bw();
+bool has_avx512_bw();
 
 } // namespace
 
@@ -60,7 +61,7 @@ bool has_cpuid_avx512_bw();
 
 namespace primesieve {
 
-bool has_cpuid_avx512_vbmi2();
+bool has_avx512_vbmi2();
 
 } // namespace
 
@@ -95,7 +96,7 @@ void sieve(const CmdOptions& opts)
   if (opts.numbers.empty())
     throw primesieve_error("missing STOP number");
 
-  ParallelSieve ps;
+  INDETERMINATE ParallelSieve ps;
 
   if (opts.flags)
     ps.setFlags(opts.flags);
@@ -157,7 +158,7 @@ void nthPrime(const CmdOptions& opts)
   if (opts.numbers.empty())
     throw primesieve_error("missing n number");
 
-  ParallelSieve ps;
+  INDETERMINATE ParallelSieve ps;
   int64_t n = opts.numbers[0];
   uint64_t start = 0;
 
@@ -262,14 +263,14 @@ void cpuInfo()
   #endif
 
   #if defined(ENABLE_MULTIARCH_AVX512_BW)
-    if (primesieve::has_cpuid_avx512_bw())
+    if (primesieve::has_avx512_bw())
       std::cout << "Has AVX512 BW: yes" << std::endl;
     else
       std::cout << "Has AVX512 BW: no" << std::endl;
   #endif
 
   #if defined(ENABLE_MULTIARCH_AVX512_VBMI2)
-    if (primesieve::has_cpuid_avx512_vbmi2())
+    if (primesieve::has_avx512_vbmi2())
       std::cout << "Has AVX512 VBMI2: yes" << std::endl;
     else
       std::cout << "Has AVX512 VBMI2: no" << std::endl;

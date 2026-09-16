@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.9...3.30)
-project(primesieve CXX)
-set(PRIMESIEVE_VERSION "12.11")
-set(PRIMESIEVE_SOVERSION "12.11.0")
+cmake_minimum_required(VERSION 3.9...4.2)
+
+project(primesieve
+        VERSION 12.16
+        LANGUAGES CXX)
 
 # Build options ######################################################
 
@@ -12,19 +13,31 @@ option(BUILD_MANPAGE     "Regenerate man page using a2x" OFF)
 option(BUILD_EXAMPLES    "Build example programs"        OFF)
 option(BUILD_TESTS       "Build test programs"           OFF)
 
-# By default we enable building the shared libprimesieve library.
-# However, the Emscripten WebAssembly compiler does not
-# support shared libraries, hence we disable building the
-# shared libprimesieve when using Emscripten.
+# By default we enable building the shared libprimesieve library, but
+# not when using Emscripten. Emscripten nowadays builds shared
+# libraries as WebAssembly side modules (and reports
+# TARGET_SUPPORTS_SHARED_LIBS=TRUE), but linking the primesieve binary
+# against such a side module requires Emscripten's dynamic linking
+# (-sMAIN_MODULE and -fPIC). For a self-contained WebAssembly binary we
+# want static linking, which is also what Emscripten recommends for
+# best performance.
 get_property(SHARED_LIBS_SUPPORTED GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS)
-if(SHARED_LIBS_SUPPORTED)
+
+if(SHARED_LIBS_SUPPORTED AND NOT EMSCRIPTEN)
     option(BUILD_SHARED_LIBS "Build shared libprimesieve" ON)
 else()
     option(BUILD_SHARED_LIBS "Build shared libprimesieve" OFF)
 endif()
 
 option(WITH_MULTIARCH       "Enable runtime dispatching to fastest supported CPU instruction set" ON)
-option(WITH_MSVC_CRT_STATIC "Link primesieve.lib with /MT instead of the default /MD" OFF)
+
+# Check if primesieve is top level project ###########################
+
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(PRIMESIEVE_IS_TOP_PROJECT ON)
+else()
+    set(PRIMESIEVE_IS_TOP_PROJECT OFF)
+endif()
 
 # libprimesieve sanity check #########################################
 
@@ -34,15 +47,29 @@ endif()
 
 # Set default build type to Release ##################################
 
-get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(PRIMESIEVE_IS_TOP_PROJECT)
+    get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
-if(NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    if(NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
+        message(STATUS "Setting CMAKE_BUILD_TYPE = Release")
+        set(CMAKE_BUILD_TYPE Release CACHE STRING
+            "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    endif()
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     list(APPEND PRIMESIEVE_COMPILE_DEFINITIONS "ENABLE_ASSERT")
+endif()
+
+# Hide symbols of inline functions ###################################
+# This reduces the size of the shared libprimesieve by about 1%.
+
+if(PRIMESIEVE_IS_TOP_PROJECT)
+    if (NOT DEFINED CMAKE_VISIBILITY_INLINES_HIDDEN)
+        message(STATUS "Setting CMAKE_VISIBILITY_INLINES_HIDDEN = ON")
+        set(CMAKE_VISIBILITY_INLINES_HIDDEN ON CACHE BOOL
+            "Whether to add a compiler flag to hide symbols of inline functions")
+    endif ()
 endif()
 
 # primesieve binary source files #####################################
@@ -99,16 +126,6 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# MSVC DLL support (Windows) #########################################
-
-if(WIN32 AND NOT MINGW)
-    set(WIN32_MSVC_COMPATIBLE ON)
-    if(BUILD_SHARED_LIBS)
-        # Export symbols to .def file
-        set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    endif()
-endif()
-
 # Check if libatomic is needed (old 32-bit systems) ##################
 
 include("${PROJECT_SOURCE_DIR}/cmake/libatomic.cmake")
@@ -117,25 +134,18 @@ include("${PROJECT_SOURCE_DIR}/cmake/libatomic.cmake")
 
 find_package(Threads REQUIRED QUIET)
 
+if(CMAKE_THREAD_LIBS_INIT)
+    string(APPEND PRIMESIEVE_PKGCONFIG_LIBS_PRIVATE "${CMAKE_THREAD_LIBS_INIT} ")
+endif()
+
 if(BUILD_SHARED_LIBS)
     add_library(libprimesieve SHARED ${LIB_SRC})
     set_target_properties(libprimesieve PROPERTIES OUTPUT_NAME primesieve)
+    set_target_properties(libprimesieve PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
+    set_target_properties(libprimesieve PROPERTIES VERSION ${PROJECT_VERSION})
+    set_target_properties(libprimesieve PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     target_link_libraries(libprimesieve PRIVATE Threads::Threads ${PRIMESIEVE_LINK_LIBRARIES})
-    string(REPLACE "." ";" SOVERSION_LIST ${PRIMESIEVE_SOVERSION})
-    list(GET SOVERSION_LIST 0 PRIMESIEVE_SOVERSION_MAJOR)
-    set_target_properties(libprimesieve PROPERTIES SOVERSION ${PRIMESIEVE_SOVERSION_MAJOR})
-    set_target_properties(libprimesieve PROPERTIES VERSION ${PRIMESIEVE_SOVERSION})
     target_compile_definitions(libprimesieve PRIVATE ${PRIMESIEVE_COMPILE_DEFINITIONS})
-
-    if(WIN32_MSVC_COMPATIBLE)
-        # On Windows the shared library will be named primesieve.dll
-        # and the associated import library will be named
-        # primesieve.lib. This is an issue as the static library
-        # is also named primesieve.lib. Hence we rename the import
-        # library to primesieve.dll.lib. The Rust programming
-        # language uses the same naming convention.
-        set_target_properties(libprimesieve PROPERTIES IMPORT_SUFFIX ".dll.lib")
-    endif()
 
     target_compile_features(libprimesieve
     PUBLIC
@@ -167,8 +177,9 @@ if(BUILD_STATIC_LIBS)
     target_link_libraries(libprimesieve-static PRIVATE Threads::Threads ${PRIMESIEVE_LINK_LIBRARIES})
     target_compile_definitions(libprimesieve-static PRIVATE ${PRIMESIEVE_COMPILE_DEFINITIONS})
 
-    if(WITH_MSVC_CRT_STATIC)
-        set_target_properties(libprimesieve-static PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded")
+    if(CMAKE_IMPORT_LIBRARY_SUFFIX AND
+       "${CMAKE_IMPORT_LIBRARY_SUFFIX}" STREQUAL "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set_target_properties(libprimesieve-static PROPERTIES ARCHIVE_OUTPUT_NAME primesieve_static)
     endif()
 
     target_compile_features(libprimesieve-static
@@ -223,10 +234,6 @@ if(BUILD_PRIMESIEVE)
     target_compile_definitions(primesieve PRIVATE ${PRIMESIEVE_COMPILE_DEFINITIONS})
     target_compile_features(primesieve PRIVATE cxx_auto_type)
     install(TARGETS primesieve DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-    if(WITH_MSVC_CRT_STATIC)
-        set_target_properties(primesieve PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded")
-    endif()
 endif()
 
 # Install headers ####################################################
@@ -247,7 +254,7 @@ install(FILES include/primesieve/iterator.h
 
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/primesieveConfigVersion.cmake"
-    VERSION ${PRIMESIEVE_VERSION}
+    VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion)
 
 configure_package_config_file(
