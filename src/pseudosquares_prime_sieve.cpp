@@ -290,14 +290,21 @@ void initialize(uint128_t stop,
 }
 
 // Sorenson's Pseudosquares Prime Test
-bool pseudosquares_prime_test(uint128_t n, int p)
+// Reuse the same Montgomery context for all modular
+// exponentiations performed for the candidate n.
+template <typename Montgomery>
+bool pseudosquares_prime_test_montgomery(uint128_t n,
+                                         int p,
+                                         const Montgomery& mf)
 {
+    using T = typename Montgomery::IntegerType;
+
     ASSERT(p >= 2);
-    uint128_t e = (n - 1) >> 1;
+    T e = (T) ((n - 1) >> 1);
     uint128_t minus1 = n - 1;
 
     // 2^((n−1)/2) mod n
-    uint128_t res = modpow<2>(e, n);
+    uint128_t res = modpow<2>(mf, e);
 
     // Condition (4) for n ≡ 1 mod 8: found -1 result
     if ((n & 7) == 1 && res == minus1)
@@ -312,7 +319,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     // For 3 <= pi ≤ p: pi^((n−1)/2) mod n
     for (std::size_t i = 1; primes[i] <= p; i++)
     {
-        res = modpow(primes[i], e, n);
+        res = modpow(mf, primes[i], e);
 
         // Condition (4) for n ≡ 1 mod 8: found -1 result
         if ((n & 7) == 1 && res == minus1)
@@ -331,7 +338,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         // confirmed it was a bug and suggested this fix.
         for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
         {
-            res = modpow(primes[i], e, n);
+            res = modpow(mf, primes[i], e);
 
             if (res == minus1)
                 return true;
@@ -341,6 +348,33 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     }
 
     return true;
+}
+
+bool pseudosquares_prime_test(uint128_t n, int p)
+{
+    ASSERT(p >= 2);
+    ASSERT(n % 2 == 1);
+
+    if (n <= std::numeric_limits<uint64_t>::max() / 4)
+    {
+        uint64_t m = (uint64_t) n;
+        hurchalla::MontgomeryQuarter<uint64_t> mf(m);
+        return pseudosquares_prime_test_montgomery(n, p, mf);
+    }
+    else if (n <= std::numeric_limits<uint64_t>::max())
+    {
+        uint64_t m = (uint64_t) n;
+        hurchalla::MontgomeryForm<uint64_t> mf(m);
+        return pseudosquares_prime_test_montgomery(n, p, mf);
+    }
+    else
+    {
+        // Our Pseudosquares Prime Sieve implementation
+        // is limited by n (modulus) <= 1.73 * 10^33.
+        ASSERT(n <= std::numeric_limits<uint128_t>::max() / 4);
+        hurchalla::MontgomeryQuarter<uint128_t> mf(n);
+        return pseudosquares_prime_test_montgomery(n, p, mf);
+    }
 }
 
 } // namespace
