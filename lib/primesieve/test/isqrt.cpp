@@ -2,7 +2,7 @@
 /// @file   isqrt.cpp
 /// @brief  Test integer square root function.
 ///
-/// Copyright (C) 2022 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -14,6 +14,8 @@
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
+
+using primesieve::isqrt;
 
 void check(bool OK)
 {
@@ -48,12 +50,12 @@ int main()
   std::cout << "isqrt(" << n << ") = " << res1;
   check(res1 == (uint64_t) res2);
 
-  n = 1000000000000000000ull - 1;
+  n = 1000000000000000000 - 1;
   res1 = isqrt(n);
   std::cout << "isqrt(" << n << ") = " << res1;
   check(res1 == 999999999);
 
-  n = 1000000000000000000ull;
+  n = 1000000000000000000;
   res1 = isqrt(n);
   std::cout << "isqrt(" << n << ") = " << res1;
   check(res1 == 1000000000);
@@ -61,7 +63,7 @@ int main()
   n = 18446744073709551615ull;
   res1 = isqrt(n);
   std::cout << "isqrt(" << n << ") = " << res1;
-  check(res1 == 4294967295ull);
+  check(res1 == 4294967295);
 
   std::cout << std::endl;
   std::cout << "All tests passed successfully!" << std::endl;

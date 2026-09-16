@@ -1,7 +1,7 @@
 ///
 /// @file  Erat.hpp
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -46,7 +46,7 @@ protected:
   /// Upper bound of the current segment
   uint64_t segmentHigh_ = 0;
   /// Sieve of Eratosthenes array
-  Vector<uint8_t> sieve_;
+  Vector<uint64_t> sieve_;
   Erat() = default;
   Erat(uint64_t, uint64_t);
   void init(uint64_t, uint64_t, uint64_t, MemoryPool& memoryPool);
@@ -63,7 +63,7 @@ private:
   EratMedium eratMedium_;
   static uint64_t byteRemainder(uint64_t);
   static uint64_t getL1CacheSize();
-  void initAlgorithms(uint64_t maxSieveSize, MemoryPool&);
+  void initAlgorithms(uint64_t maxSieveBytes, MemoryPool&);
   void preSieve();
   void crossOff();
   void sieveLastSegment();
@@ -75,7 +75,7 @@ private:
 /// returns a random 64-bit integer. It is up to the caller
 /// to handle this use case correctly.
 ///
-inline uint64_t Erat::nextPrime(uint64_t bits, uint64_t low)
+ALWAYS_INLINE uint64_t Erat::nextPrime(uint64_t bits, uint64_t low)
 {
 // CTZ64_SUPPORTS_ZERO is defined if (ctz64(0) <= 64),
 // in this case we use the optimal code path.
@@ -88,8 +88,8 @@ inline uint64_t Erat::nextPrime(uint64_t bits, uint64_t low)
   auto bitIndex = ctz64(bits | (1ull << 63));
   uint64_t bitValue = bitValues[bitIndex];
 #else
-  // Fallback if CTZ instruction is not avilable
-  uint64_t debruijn = 0x3F08A4C6ACB9DBDull;
+  // Fallback if CTZ instruction is not available
+  uint64_t debruijn = 0x3F08A4C6ACB9DBD;
   uint64_t hash = ((bits ^ (bits - 1)) * debruijn) >> 58;
   uint64_t bitValue = bruijnBitValues[hash];
 #endif
@@ -98,14 +98,14 @@ inline uint64_t Erat::nextPrime(uint64_t bits, uint64_t low)
   return prime;
 }
 
-inline void Erat::addSievingPrime(uint64_t prime)
+ALWAYS_INLINE void Erat::addSievingPrime(uint64_t prime)
 {
        if (prime > maxEratMedium_)   eratBig_.addSievingPrime(prime, segmentLow_);
   else if (prime > maxEratSmall_) eratMedium_.addSievingPrime(prime, segmentLow_);
   else /* (prime > maxPreSieve) */ eratSmall_.addSievingPrime(prime, segmentLow_);
 }
 
-inline uint64_t Erat::getStop() const
+ALWAYS_INLINE uint64_t Erat::getStop() const
 {
   return stop_;
 }

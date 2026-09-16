@@ -1,7 +1,7 @@
 ///
 /// @file  nthPrime.cpp
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -24,7 +24,7 @@
 namespace {
 
 /// PrimePi(2^64)
-const uint64_t max_n = 425656284035217743ull;
+const uint64_t max_n = 425656284035217743;
 
 /// Average prime gap near n
 uint64_t avgPrimeGap(uint64_t n)
@@ -59,7 +59,7 @@ uint64_t PrimeSieve::nthPrime(int64_t n, uint64_t start)
     throw primesieve_error("nth_prime(n): n must be <= " + std::to_string(max_n));
 
   setStart(start);
-  auto t1 = std::chrono::system_clock::now();
+  auto t1 = std::chrono::steady_clock::now();
   uint64_t nApprox = checkedAdd(primePiApprox(start), n);
   nApprox = std::min(nApprox, max_n);
   uint64_t primeApprox = nthPrimeApprox(nApprox);
@@ -81,8 +81,9 @@ uint64_t PrimeSieve::nthPrime(int64_t n, uint64_t start)
     start = primeApprox;
   }
 
-  // Here we are very close to the nth prime < sqrt(nth_prime),
-  // we simply iterate over the primes until we find it.
+  // Here we are very close to the nth prime, the remaining
+  // distance is < sqrt(nth prime). Hence we simply iterate
+  // over the primes until we find it.
   if (countApprox < n)
   {
     start = checkedAdd(start, 1);
@@ -105,7 +106,7 @@ uint64_t PrimeSieve::nthPrime(int64_t n, uint64_t start)
     }
   }
 
-  auto t2 = std::chrono::system_clock::now();
+  auto t2 = std::chrono::steady_clock::now();
   std::chrono::duration<double> seconds = t2 - t1;
   seconds_ = seconds.count();
 
@@ -116,15 +117,23 @@ uint64_t PrimeSieve::nthPrime(int64_t n, uint64_t start)
 uint64_t PrimeSieve::negativeNthPrime(int64_t n, uint64_t start)
 {
   ASSERT(n < 0);
-  n = -n;
 
-  if ((uint64_t) n >= start)
+  // -n causes undefined behavior for n = INT64_MIN.
+  // Hence we use the defined two's complement negation: ~n + 1.
+  // Casting ~n to unsigned ensures the result of the addition
+  // (2^63 for INT64_MIN) is safely stored in a uint64_t
+  // without signed overflow.
+  uint64_t abs_n = uint64_t(~n) + 1;
+
+  if (abs_n >= start)
     throw primesieve_error("nth_prime(n): abs(n) must be < start");
-  else if ((uint64_t) n > max_n)
+  else if (abs_n > max_n)
     throw primesieve_error("nth_prime(n): abs(n) must be <= " + std::to_string(max_n));
 
+  n = int64_t(abs_n);
+
   setStart(start);
-  auto t1 = std::chrono::system_clock::now();
+  auto t1 = std::chrono::steady_clock::now();
   uint64_t nApprox = checkedSub(primePiApprox(start), n);
   nApprox = std::min(nApprox, max_n);
   uint64_t primeApprox = nthPrimeApprox(nApprox);
@@ -146,8 +155,9 @@ uint64_t PrimeSieve::negativeNthPrime(int64_t n, uint64_t start)
     start = primeApprox;
   }
 
-  // Here we are very close to the nth prime < sqrt(nth_prime),
-  // we simply iterate over the primes until we find it.
+  // Here we are very close to the nth prime, the remaining
+  // distance is < sqrt(nth prime). Hence we simply iterate
+  // over the primes until we find it.
   if (countApprox >= n)
   {
     uint64_t dist = (countApprox - n) * avgPrimeGap(start);
@@ -170,7 +180,7 @@ uint64_t PrimeSieve::negativeNthPrime(int64_t n, uint64_t start)
     }
   }
 
-  auto t2 = std::chrono::system_clock::now();
+  auto t2 = std::chrono::steady_clock::now();
   std::chrono::duration<double> seconds = t2 - t1;
   seconds_ = seconds.count();
 

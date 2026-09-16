@@ -1,7 +1,7 @@
 ///
 /// @file  CountPrintPrimes.hpp
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -21,8 +21,6 @@
 
 namespace primesieve {
 
-class Store;
-
 /// After a segment has been sieved CountPrintPrimes is
 /// used to reconstruct primes and prime k-tuplets from
 /// 1 bits of the sieve array.
@@ -36,15 +34,15 @@ private:
   uint64_t low_ = 0;
   /// Count lookup tables for prime k-tuplets
   Vector<uint8_t> kCounts_[6];
+  Vector<char> charBuffer_;
   counts_t& counts_;
   /// Reference to the associated PrimeSieve object
   PrimeSieve& ps_;
   MemoryPool memoryPool_;
   void initCounts();
-  void countPrimes();
   void countkTuplets();
-  void printPrimes() const;
-  void printkTuplets() const;
+  void printPrimes();
+  void printkTuplets();
 };
 
 } // namespace

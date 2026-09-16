@@ -7,7 +7,7 @@
  *         standard error stream. libprimesieve also sets the C errno
  *         variable to EDOM if an error occurs.
  * 
- * Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+ * Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
  * 
  * This file is distributed under the BSD License.
  */
@@ -15,9 +15,9 @@
 #ifndef PRIMESIEVE_H
 #define PRIMESIEVE_H
 
-#define PRIMESIEVE_VERSION "12.11"
+#define PRIMESIEVE_VERSION "12.16"
 #define PRIMESIEVE_VERSION_MAJOR 12
-#define PRIMESIEVE_VERSION_MINOR 11
+#define PRIMESIEVE_VERSION_MINOR 16
 
 #include <primesieve/iterator.h>
 

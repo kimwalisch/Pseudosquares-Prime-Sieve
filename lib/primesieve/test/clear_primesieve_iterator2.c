@@ -1,8 +1,8 @@
 ///
 /// @file   clear_primesieve_iterator2.c
-/// @brief  Test next_prime() of primesieve::iterator.
+/// @brief  Test primesieve_clear() of primesieve_iterator.
 ///
-/// Copyright (C) 2022 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -42,6 +42,11 @@ int main(void)
 
   printf("Count of the primes = %" PRIu64, primes);
   check(primes == 9592 * 10);
+
+  primesieve_free_iterator(&it);
+  uint64_t prime = primesieve_next_prime(&it);
+  printf("Prime after free = %" PRIu64, prime);
+  check(prime == 2);
 
   primesieve_free_iterator(&it);
   printf("\n");

@@ -1,5 +1,5 @@
 PROJECT_NAME           = "primesieve"
-PROJECT_NUMBER         = @PRIMESIEVE_VERSION@
+PROJECT_NUMBER         = @PROJECT_VERSION@
 INPUT                  = @PROJECT_SOURCE_DIR@/doc/mainpage.dox \
                          @PROJECT_SOURCE_DIR@/include/primesieve.hpp \
                          @PROJECT_SOURCE_DIR@/include/primesieve.h \
@@ -32,4 +32,3 @@ EXAMPLE_RECURSIVE      = YES
 GENERATE_LATEX         = @HAVE_LATEX@
 FULL_PATH_NAMES        = NO
 HAVE_DOT               = @HAVE_DOT@
-LATEX_EXTRA_STYLESHEET = @PROJECT_SOURCE_DIR@/doc/override_tables.sty

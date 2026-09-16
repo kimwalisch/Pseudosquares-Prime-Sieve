@@ -2,7 +2,7 @@
 /// @file   ParallelSieve.cpp
 /// @brief  Multi-threaded prime sieve using std::async.
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -35,6 +35,23 @@ counts_t& operator+=(counts_t& v1, const counts_t& v2)
     v1[i] += v2[i];
   return v1;
 }
+
+template <typename T>
+class RelaxedAtomic
+{
+public:
+  RelaxedAtomic(T n) : atomic_(n) { }
+  // Postfix Increment
+  T operator++(int)
+  {
+    return atomic_.fetch_add(1, std::memory_order_relaxed);
+  }
+private:
+  // Use padding to avoid CPU false sharing
+  MAYBE_UNUSED char pad1[config::MAX_CACHE_LINE_SIZE];
+  std::atomic<T> atomic_;
+  MAYBE_UNUSED char pad2[config::MAX_CACHE_LINE_SIZE];
+};
 
 } // namespace
 
@@ -143,22 +160,22 @@ void ParallelSieve::sieve()
   else
   {
     setStatus(0);
-    auto t1 = std::chrono::system_clock::now();
+    auto t1 = std::chrono::steady_clock::now();
     uint64_t dist = getDistance();
     uint64_t threadDist = getThreadDistance(threads);
     uint64_t iters = ((dist - 1) / threadDist) + 1;
     threads = inBetween(1, threads, iters);
-    std::atomic<uint64_t> a(0);
+    INDETERMINATE RelaxedAtomic<uint64_t> a(0);
 
     // Each thread executes 1 task
     auto task = [&]()
     {
-      PrimeSieve ps(this);
+      INDETERMINATE PrimeSieve ps(this);
       uint64_t i;
       counts_t counts;
       counts.fill(0);
 
-      while ((i = a.fetch_add(1, std::memory_order_relaxed)) < iters)
+      while ((i = a++) < iters)
       {
         uint64_t start = start_ + threadDist * i;
         uint64_t stop = checkedAdd(start, threadDist);
@@ -184,7 +201,7 @@ void ParallelSieve::sieve()
     for (auto& f : futures)
       counts_ += f.get();
 
-    auto t2 = std::chrono::system_clock::now();
+    auto t2 = std::chrono::steady_clock::now();
     std::chrono::duration<double> seconds = t2 - t1;
     seconds_ = seconds.count();
     setStatus(100);
