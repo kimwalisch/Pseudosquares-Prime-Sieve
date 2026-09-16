@@ -362,6 +362,12 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         hurchalla::MontgomeryQuarter<uint64_t> mf(m);
         return pseudosquares_prime_test_montgomery(n, p, mf);
     }
+    else if (n <= std::numeric_limits<uint64_t>::max() / 2)
+    {
+        uint64_t m = (uint64_t) n;
+        hurchalla::MontgomeryHalf<uint64_t> mf(m);
+        return pseudosquares_prime_test_montgomery(n, p, mf);
+    }
     else if (n <= std::numeric_limits<uint64_t>::max())
     {
         uint64_t m = (uint64_t) n;
