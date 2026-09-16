@@ -4,7 +4,7 @@
 ///         Sieve algorithm to generate primes ≤ 1.73 * 10^33.
 ///         The algorithm has been parallelized using std::async.
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -154,6 +154,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "pseudosquares_prime_sieve: " << e.what() << std::endl;
         std::cerr << "Try 'pseudosquares_prime_sieve --help' for more information." << std::endl;
+        return 1;
     }
 
     return 0;
