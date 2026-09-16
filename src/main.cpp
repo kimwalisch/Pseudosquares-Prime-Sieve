@@ -94,7 +94,7 @@ int main(int argc, char** argv)
                 std::cout << "Sieving primes inside [" << start_str << ", " << stop_str << "]" << std::endl;
         }
 
-        auto t1 = std::chrono::system_clock::now();
+        auto t1 = std::chrono::steady_clock::now();
         uint64_t count = 0;
 
         if (start <= stop)
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
                 count += fut.get();
         }
 
-        auto t2 = std::chrono::system_clock::now();
+        auto t2 = std::chrono::steady_clock::now();
         std::chrono::duration<double> seconds = t2 - t1;
 
         std::cout << "\nPrimes: " << count << std::endl;
