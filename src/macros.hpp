@@ -1,7 +1,7 @@
 ///
 /// @file  macros.hpp
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -26,9 +26,6 @@
   #define __has_include(x) 0
 #endif
 
-// Required for std::unreachable()
-#include <utility>
-
 /// Enable expensive debugging assertions.
 /// These assertions enable e.g. bounds checks for the
 /// Vector and Array types.
@@ -38,7 +35,7 @@
   #include <cassert>
   #define ASSERT(x) assert(x)
 #else
-  #define ASSERT(x) (static_cast<void>(0))
+  #define ASSERT(x) ((void) 0)
 #endif
 
 /// Unfortunately compilers cannot be trusted (especially GCC)
@@ -120,6 +117,7 @@
   // because GCC's std::unreachable() implementation uses
   // __builtin_trap() instead of __builtin_unreachable() if
   // _GLIBCXX_ASSERTIONS is defined.
+  #include <utility>
   #define UNREACHABLE std::unreachable()
 #else
   #define UNREACHABLE
