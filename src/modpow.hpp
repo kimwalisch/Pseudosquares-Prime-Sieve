@@ -4,7 +4,7 @@
 ///         integers using the hurchalla/modular_arithmetic library:
 ///         https://github.com/hurchalla/modular_arithmetic
 ///
-/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -25,10 +25,10 @@
 
 namespace {
 
-/// modpow<2>(mf, e) = 2^e mod mf.getModulus()
+/// Return the canonical Montgomery value of 2^e mod mf.getModulus().
 template <int two, typename Montgomery>
-uint128_t modpow(const Montgomery& mf,
-                 typename Montgomery::IntegerType exponent)
+typename Montgomery::CanonicalValue modpow(const Montgomery& mf,
+                                            typename Montgomery::IntegerType exponent)
 {
     static_assert(two == 2, "modpow: two != 2");
 
@@ -38,13 +38,14 @@ uint128_t modpow(const Montgomery& mf,
     ASSERT(exponent < mf.getModulus());
 
     auto res_montval = hurchalla::detail::montgomery_two_pow::call(mf, exponent);
-    return mf.convertOut(res_montval);
+    return mf.getCanonicalValue(res_montval);
 }
 
+/// Return the canonical Montgomery value of base^e mod mf.getModulus().
 template <typename Montgomery>
-uint128_t modpow(const Montgomery& mf,
-                 uint64_t base,
-                 typename Montgomery::IntegerType exponent)
+typename Montgomery::CanonicalValue modpow(const Montgomery& mf,
+                                            uint64_t base,
+                                            typename Montgomery::IntegerType exponent)
 {
     using T = typename Montgomery::IntegerType;
 
@@ -55,7 +56,7 @@ uint128_t modpow(const Montgomery& mf,
 
     auto base_montval = mf.convertIn((T) base);
     auto res_montval = mf.pow(base_montval, exponent);
-    return mf.convertOut(res_montval);
+    return mf.getCanonicalValue(res_montval);
 }
 
 } // namespace

@@ -301,10 +301,11 @@ bool pseudosquares_prime_test_montgomery(uint128_t n,
 
     ASSERT(p >= 2);
     T e = (T) ((n - 1) >> 1);
-    uint128_t minus1 = n - 1;
+    const auto one = mf.getUnityValue();
+    const auto minus1 = mf.getNegativeOneValue();
 
     // 2^((n−1)/2) mod n
-    uint128_t res = modpow<2>(mf, e);
+    auto res = modpow<2>(mf, e);
 
     // Condition (4) for n ≡ 1 mod 8: found -1 result
     if ((n & 7) == 1 && res == minus1)
@@ -313,7 +314,7 @@ bool pseudosquares_prime_test_montgomery(uint128_t n,
     if ((n & 7) == 5 && res != minus1)
         return false;
     // Condition (3): 2^((n−1)/2) ≡ ±1 mod n
-    if (res != 1 && res != minus1)
+    if (res != one && res != minus1)
         return false;
 
     // For 3 <= pi ≤ p: pi^((n−1)/2) mod n
@@ -325,7 +326,7 @@ bool pseudosquares_prime_test_montgomery(uint128_t n,
         if ((n & 7) == 1 && res == minus1)
             return true;
         // Condition (3): pi^((n−1)/2) ≡ ±1 mod n
-        if (res != 1 && res != minus1)
+        if (res != one && res != minus1)
             return false;
     }
 
@@ -342,7 +343,7 @@ bool pseudosquares_prime_test_montgomery(uint128_t n,
 
             if (res == minus1)
                 return true;
-            if (res != 1)
+            if (res != one)
                 return false;
         }
     }
