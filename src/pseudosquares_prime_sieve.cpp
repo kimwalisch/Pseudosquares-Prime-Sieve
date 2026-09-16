@@ -23,12 +23,13 @@
 
 #include <algorithm>
 #include <array>
-#include <iostream>
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <stdint.h>
+#include <string>
 
 namespace {
 
@@ -519,4 +520,28 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     }
 
     return count;
+}
+
+/// Custom assertion failure handler.
+/// On MinGW GCC 16, the standard assert() implementation no longer
+/// guarantees a non-returning failure path, which can cause false
+/// positive compiler warnings such as -Warray-bounds in debug builds.
+/// https://github.com/mingw-w64/mingw-w64/commit/ecf2328a328d11dec7044b40b2b5e93b5b2b9d9e
+///
+/// Using our own [[noreturn]] handler lets the compiler correctly
+/// infer that execution cannot continue after a failed assertion.
+///
+[[noreturn]]
+void assertion_failed(const char* expression,
+                      const char* file,
+                      int line)
+{
+  std::string msg = std::string(file) + ":" + std::to_string(line);
+  msg += ": assertion failed: ";
+  msg += expression;
+  msg += '\n';
+
+  std::cerr << msg;
+
+  std::abort();
 }

@@ -26,18 +26,6 @@
   #define __has_include(x) 0
 #endif
 
-/// Enable expensive debugging assertions.
-/// These assertions enable e.g. bounds checks for the
-/// Vector and Array types.
-///
-#if defined(ENABLE_ASSERT)
-  #undef NDEBUG
-  #include <cassert>
-  #define ASSERT(x) assert(x)
-#else
-  #define ASSERT(x) ((void) 0)
-#endif
-
 /// Unfortunately compilers cannot be trusted (especially GCC)
 /// to inline performance critical functions. We must ensure
 /// that e.g. pi[x] and segmentedPi[x] are inlined.
@@ -76,6 +64,24 @@
   #define if_unlikely(x) if (__builtin_expect(!!(x), 0))
 #else
   #define if_unlikely(x) if (x)
+#endif
+
+/// Enable expensive debugging assertions.
+/// These assertions enable e.g. bounds checks for the
+/// Vector and Array types.
+///
+#if defined(ENABLE_ASSERT)
+  [[noreturn]]
+  void assertion_failed(const char* expression,
+                        const char* file,
+                        int line);
+  #define ASSERT(x) \
+    do { \
+      if_unlikely(!(x)) \
+        assertion_failed(#x, __FILE__, __LINE__); \
+    } while (0)
+#else
+  #define ASSERT(x) ((void) 0)
 #endif
 
 #if __cplusplus >= 201703L && \
