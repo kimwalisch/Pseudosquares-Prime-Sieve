@@ -17,11 +17,6 @@ if(NOT isMultiConfig AND NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-# Enable assertions in Debug mode only
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    list(APPEND PRIMECOUNT_COMPILE_DEFINITIONS "ENABLE_ASSERT")
-endif()
-
 # libprimesieve ######################################################
 
 # By default the libprimesieve dependency is built from source
@@ -74,12 +69,14 @@ set(SRC_FILES src/main.cpp
 # Main executable
 add_executable(pseudosquares_prime_sieve ${SRC_FILES})
 target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::primesieve hurchalla_modular_arithmetic)
+target_compile_definitions(pseudosquares_prime_sieve PRIVATE $<$<CONFIG:Debug>:ENABLE_ASSERT>)
 set_target_properties(pseudosquares_prime_sieve PROPERTIES CXX_STANDARD 17)
 
 # Test executable
 enable_testing()
 add_executable(tests src/tests.cpp src/pseudosquares_prime_sieve.cpp)
 target_link_libraries(tests primesieve::primesieve hurchalla_modular_arithmetic)
+target_compile_definitions(tests PRIVATE $<$<CONFIG:Debug>:ENABLE_ASSERT>)
 set_target_properties(tests PROPERTIES CXX_STANDARD 17)
 
 # Register test with CTest

@@ -486,7 +486,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
                 n += prime & -(n < low);
                 n += prime & -((n & 1) == 0);
                 n = std::max(n, pp);
-                ASSERT(n % 2 == 0);
+                ASSERT(n % 2 == 1);
                 i = uint64_t(n - low);
             }
 
