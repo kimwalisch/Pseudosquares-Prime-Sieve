@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10...3.30)
+cmake_minimum_required(VERSION 3.10...4.2)
 project(pseudosquares_prime_sieve CXX)
 
 # Build options ######################################################
