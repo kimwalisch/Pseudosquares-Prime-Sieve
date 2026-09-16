@@ -536,12 +536,12 @@ void assertion_failed(const char* expression,
                       const char* file,
                       int line)
 {
-  std::string msg = std::string(file) + ":" + std::to_string(line);
-  msg += ": assertion failed: ";
-  msg += expression;
-  msg += '\n';
+    std::string msg("\n");
+    msg += std::string(file) + ":" + std::to_string(line);
+    msg += ": assertion failed: ";
+    msg += expression + std::string("\n\n");
 
-  std::cerr << msg;
+    std::cerr << msg;
 
-  std::abort();
+    std::abort();
 }
