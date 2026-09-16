@@ -368,7 +368,7 @@ bool pseudosquares_prime_test_montgomery(uint128_t n,
         // check all pi > p while Lpi <= n: pi^((n−1)/2) ≡ ±1 mod n
         // This step is missing in Sorenson's paper. Sorenson
         // confirmed it was a bug and suggested this fix.
-        for (std::size_t i = prime_pi[p] + 1; pseudosquares.at(i).Lp <= n; i++)
+        for (std::size_t i = prime_pi[p]; pseudosquares.at(i).Lp <= n; i++)
         {
             res = modpow(mf, primes[i], e);
 
