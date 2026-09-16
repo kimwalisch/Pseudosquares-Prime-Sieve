@@ -19,7 +19,6 @@
 #include <hurchalla/modular_arithmetic/modular_pow.h>
 #include <hurchalla/montgomery_arithmetic/MontgomeryForm.h>
 #include <hurchalla/montgomery_arithmetic/montgomery_form_aliases.h>
-#include <hurchalla/montgomery_arithmetic/detail/platform_specific/montgomery_two_pow.h>
 
 #include <stdint.h>
 
@@ -37,7 +36,7 @@ typename Montgomery::CanonicalValue modpow(const Montgomery& mf,
     ASSERT(mf.getModulus() % 2 == 1);
     ASSERT(exponent < mf.getModulus());
 
-    auto res_montval = hurchalla::detail::montgomery_two_pow::call(mf, exponent);
+    auto res_montval = mf.two_pow(exponent);
     return mf.getCanonicalValue(res_montval);
 }
 
