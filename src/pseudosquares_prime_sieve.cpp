@@ -21,6 +21,7 @@
 
 #include <primesieve.hpp>
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <cmath>
@@ -430,7 +431,7 @@ uint64_t pseudosquares_prime_sieve(uint128_t start,
     //
     // However, our implementation is also limited by the
     // formula n / s < max(Lp) and since we only have a list of
-    // pseudosqaures up to max(Lp) = L_373 our implementation
+    // pseudosquares up to max(Lp) = L_373 our implementation
     // requires n <= 1.73 * 10^33, see initialize().
     if ((double) stop > 1.73 * 1e33)
         throw std::runtime_error("stop must be <= 1.73 * 10^33");
