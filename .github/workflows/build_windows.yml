@@ -45,9 +45,9 @@ jobs:
       - name: Get Version for Artifact
         shell: powershell
         run: |
-          $VersionString = Select-String -Path "src/main.cpp" -Pattern 'pseudosquares_prime_sieve ([0-9.]+)"'
+          $VersionString = Select-String -Path "CMakeLists.txt" -Pattern '^\s*VERSION\s+([0-9]+(?:\.[0-9]+)*)\s*$'
           if (-not $VersionString) {
-            throw "Failed to detect version in src/main.cpp"
+            throw "Failed to detect version in CMakeLists.txt"
           }
           echo "PROJECT_VERSION=$($VersionString.Matches[0].Groups[1].Value)" >> $env:GITHUB_ENV
 
