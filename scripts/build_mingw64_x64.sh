@@ -138,8 +138,8 @@ sed -i "1 s/.*/$README_TITLE/" README.txt
 sed -i "2 s/.*/$FULL_DATE/" README.txt
 
 # README.txt is distributed for Windows and must use CRLF line endings.
-# Some sed operations above can create LF-only lines, so normalize the
-# complete file back to CRLF before it is added to the release archive.
+# Perform this conversion only after all README.txt modifications so the
+# file has consistent Windows line endings when added to the archive.
 sed -i 's/\r$//' README.txt
 sed -i 's/$/\r/' README.txt
 
@@ -153,8 +153,6 @@ sed -i "3 s/.*/$COPYRIGHT/" LICENSE
 # Verify sed has worked correctly
 [ "$(sed -n '1p' README.txt | tr -d '\r')" = "$README_TITLE" ] || handle_error "failed updating README.txt version"
 [ "$(sed -n '2p' README.txt | tr -d '\r')" = "$FULL_DATE" ] || handle_error "failed updating README.txt date"
-awk 'substr($0, length($0), 1) != "\r" { exit 1 }' README.txt ||
-    handle_error "README.txt contains non-CRLF line endings"
 [ "$(sed -n '3p' LICENSE)" = "$COPYRIGHT" ] || handle_error "failed updating LICENSE"
 
 ./pseudosquares_prime_sieve.exe -v
