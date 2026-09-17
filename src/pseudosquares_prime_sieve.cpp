@@ -49,7 +49,8 @@ const Array<int, 128> primes =
     661, 673, 677, 683, 691, 701, 709, 719
 };
 
-/// Number of primes < 450
+// prime_pi[x] = pi(x).
+// The number of primes <= x, for x < 450.
 const Array<uint8_t, 450> prime_pi =
 {
      0,   0,   1,   2,   2,   3,   3,   4,   4,   4,   4,   5,   5,   6,   6,
