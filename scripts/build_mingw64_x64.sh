@@ -70,6 +70,23 @@ strip pseudosquares_prime_sieve.exe
 
 ./pseudosquares_prime_sieve --test
 
+# Test printing primes. Native Windows stdout uses CRLF,
+# so strip CR before calculating the MD5 hash.
+
+echo "Testing: ./pseudosquares_prime_sieve 1e7 -p"
+if [ "$(./pseudosquares_prime_sieve 1e7 -p | tr -d '\r' | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ];
+then
+    echo "Incorrect MD5 hash detected!"
+    exit 1;
+fi
+
+echo "Testing: ./pseudosquares_prime_sieve 1e19 -d1e7 -p"
+if [ "$(./pseudosquares_prime_sieve 1e19 -d1e7 -p | tr -d '\r' | md5sum | cut -f1 -d' ')" != "9c3c1d856999f50060d7070010e67270" ];
+then
+    echo "Incorrect MD5 hash detected!"
+    exit 1;
+fi
+
 echo ""
 echo ""
 
