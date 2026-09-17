@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <stdint.h>
 
+namespace {
+
 /// Correct pi(x) values to compare with test results
 const std::array<uint64_t, 8> pix =
 {
@@ -56,7 +58,9 @@ void check(bool OK)
     std::exit(1);
 }
 
-int main()
+} // namespace
+
+void test()
 {
   std::cout << std::left;
   uint64_t count = 0;
@@ -91,5 +95,5 @@ int main()
   std::cout << std::endl;
   std::cout << "All tests passed successfully!" << std::endl;
 
-  return 0;
+  std::exit(0);
 }

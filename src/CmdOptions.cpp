@@ -2,7 +2,7 @@
 /// @file   CmdOptions.cpp
 /// @brief  Command-line option handling.
 ///
-/// Copyright (C) 2025 Kim Walisch, <kim.walisch@gmail.com>
+/// Copyright (C) 2026 Kim Walisch, <kim.walisch@gmail.com>
 ///
 /// This file is distributed under the BSD License. See the COPYING
 /// file in the top level directory.
@@ -21,6 +21,7 @@
 #include <utility>
 
 void help(int exit_code);
+void test();
 void version();
 
 namespace {
@@ -31,6 +32,7 @@ enum OptionID
   OPTION_HELP,
   OPTION_NUMBER,
   OPTION_PRINT,
+  OPTION_TEST,
   OPTION_THREADS,
   OPTION_VERSION
 };
@@ -231,6 +233,7 @@ CmdOptions parseOptions(int argc, char** argv)
     { "--number",  std::make_pair(OPTION_NUMBER, REQUIRED_PARAM) },
     { "-p",        std::make_pair(OPTION_PRINT, OPTIONAL_PARAM) },
     { "--print",   std::make_pair(OPTION_PRINT, OPTIONAL_PARAM) },
+    { "--test",    std::make_pair(OPTION_TEST, NO_PARAM) },
     { "-t",        std::make_pair(OPTION_THREADS, REQUIRED_PARAM) },
     { "--threads", std::make_pair(OPTION_THREADS, REQUIRED_PARAM) },
     { "-v",        std::make_pair(OPTION_VERSION, NO_PARAM) },
@@ -251,6 +254,7 @@ CmdOptions parseOptions(int argc, char** argv)
                             opts.numbers_str.push_back(opt.val); break;
       case OPTION_PRINT:    opts.print_primes = true; break;
       case OPTION_THREADS:  opts.threads = getVal<int>(opt); break;
+      case OPTION_TEST:     test(); break;
       case OPTION_HELP:     help(0); break;
       case OPTION_VERSION:  version(); break;
     }

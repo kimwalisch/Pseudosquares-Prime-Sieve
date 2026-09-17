@@ -35,6 +35,7 @@ void help(int exit_code)
         "  -d, --dist=DIST    Sieve the interval [START, START + DIST].\n"
         "  -h, --help         Print this help menu.\n"
         "  -p, --print        Print primes to the standard output.\n"
+        "      --test         Run the unit tests.\n"
         "  -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.\n"
         "                     Default setting: use all available CPU cores.\n"
         "  -v, --version      Print version and license information.\n";

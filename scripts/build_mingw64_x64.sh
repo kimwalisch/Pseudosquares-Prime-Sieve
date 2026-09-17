@@ -60,27 +60,15 @@ g++ -std=gnu++17 -static -O3 -mpopcnt -flto -DNDEBUG -D_WIN32_WINNT=0x0A00 -Wall
     ../lib/primesieve/src/arch/x86/*.cpp \
     ../src/pseudosquares_prime_sieve.cpp \
     ../src/CmdOptions.cpp \
+    ../src/test.cpp \
     ../src/main.cpp \
     -o pseudosquares_prime_sieve.exe
 
 strip pseudosquares_prime_sieve.exe
 
-# Build and run release tests #######################################
+# Run release tests #################################################
 
-g++ -std=gnu++17 -static -O3 -mpopcnt -flto -DNDEBUG -D_WIN32_WINNT=0x0A00 -Wall -Wextra -pedantic -DENABLE_MULTIARCH_AVX512_BW -DENABLE_MULTIARCH_AVX512_VBMI2 \
-    -I../src \
-    -I../lib/primesieve/include \
-    -I../lib/primesieve/src \
-    -I../lib/modular_arithmetic/modular_arithmetic/include \
-    -I../lib/modular_arithmetic/montgomery_arithmetic/include \
-    -I../build/_deps/hurchalla_util-src/include \
-    ../lib/primesieve/src/*.cpp \
-    ../lib/primesieve/src/arch/x86/*.cpp \
-    ../src/pseudosquares_prime_sieve.cpp \
-    ../src/tests.cpp \
-    -o tests.exe
-
-./tests.exe
+./pseudosquares_prime_sieve --test
 
 echo ""
 echo ""

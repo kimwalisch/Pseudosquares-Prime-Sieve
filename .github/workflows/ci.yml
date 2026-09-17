@@ -25,7 +25,12 @@ jobs:
             cmake . -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./tests
+        run: ./pseudosquares_prime_sieve --test
+      # Test printing primes
+      - name: pseudosquares_prime_sieve 1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
+      - name: pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum | cut -f1 -d' ')" != "9c3c1d856999f50060d7070010e67270" ]; then exit 1; fi
 
   linux_clang:
     strategy:
@@ -43,7 +48,12 @@ jobs:
             cmake . -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./tests
+        run: ./pseudosquares_prime_sieve --test
+      # Test printing primes
+      - name: pseudosquares_prime_sieve 1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
+      - name: pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum | cut -f1 -d' ')" != "9c3c1d856999f50060d7070010e67270" ]; then exit 1; fi
 
   # See documentation: https://www.msys2.org/docs/ci/
   windows_mingw64:
@@ -66,7 +76,13 @@ jobs:
             cmake . -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./tests
+        run: ./pseudosquares_prime_sieve --test
+      # Test printing primes. Native Windows stdout uses CRLF, so strip CR
+      # before calculating the MD5 hash used by the Unix CI jobs.
+      - name: pseudosquares_prime_sieve 1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | tr -d '\r' | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
+      - name: pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e19 -d1e7 -p | tr -d '\r' | md5sum | cut -f1 -d' ')" != "9c3c1d856999f50060d7070010e67270" ]; then exit 1; fi
 
   macos_clang:
     strategy:
@@ -84,7 +100,12 @@ jobs:
             cmake . -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./tests
+        run: ./pseudosquares_prime_sieve --test
+      # Test printing primes
+      - name: pseudosquares_prime_sieve 1e7 -p | md5
+        run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5 | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
+      - name: pseudosquares_prime_sieve 1e19 -d1e7 -p | md5
+        run: if [ "$(./pseudosquares_prime_sieve 1e19 -d1e7 -p | md5 | cut -f1 -d' ')" != "9c3c1d856999f50060d7070010e67270" ]; then exit 1; fi
 
   linux_gcc_sanitizers:
     runs-on: ubuntu-latest
@@ -98,7 +119,12 @@ jobs:
             cmake . -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror -O2 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror -O2 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./tests
+        run: ./pseudosquares_prime_sieve --test
+      # Test printing primes
+      - name: pseudosquares_prime_sieve 1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
+      - name: pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum
+        run: if [ "$(./pseudosquares_prime_sieve 1e19 -d1e7 -p | md5sum | cut -f1 -d' ')" != "9c3c1d856999f50060d7070010e67270" ]; then exit 1; fi
       - name: pseudosquares_prime_sieve 1e8 --threads=4
         run: ./pseudosquares_prime_sieve 1e8 --threads=4
       - name: pseudosquares_prime_sieve 1e25 1e25+1e5
