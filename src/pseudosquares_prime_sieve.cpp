@@ -231,7 +231,7 @@ Vector<SievingPrime> get_sieving_primes(uint64_t n)
     return sieving_primes;
 }
 
-// In Sorenson's paper the semgent size is named ∆,
+// In Sorenson's paper the segment size is named ∆,
 // with ∆ = s / log(n). We also have ∆ = Θ(π(p) log n).
 // Sorenson's paper also mentions that using a larger
 // segment size improves performance. Hence, we use a

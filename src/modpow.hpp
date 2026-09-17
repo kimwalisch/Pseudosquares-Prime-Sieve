@@ -1,5 +1,5 @@
 ///
-/// @file   modow.hpp
+/// @file   modpow.hpp
 /// @brief  Fast modular exponentiation of 64-bit and 128-bit
 ///         integers using the hurchalla/modular_arithmetic library:
 ///         https://github.com/hurchalla/modular_arithmetic
