@@ -40,7 +40,7 @@ cmake .
 cmake --build . --parallel
 
 # Run tests
-./tests
+./pseudosquares_prime_sieve --test
 ```
 
 # Usage examples
