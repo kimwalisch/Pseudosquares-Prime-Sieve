@@ -145,11 +145,13 @@ int main(int argc, char** argv)
                 count += fut.get();
         }
 
-        auto t2 = std::chrono::steady_clock::now();
-        std::chrono::duration<double> seconds = t2 - t1;
-
-        std::cout << "\nPrimes: " << count << std::endl;
-        std::cout << "Seconds: " << std::fixed << std::setprecision(3) << seconds.count() << std::endl;
+        if (!opts.print_primes)
+        {
+            auto t2 = std::chrono::steady_clock::now();
+            std::chrono::duration<double> seconds = t2 - t1;
+            std::cout << "\nPrimes: " << count << std::endl;
+            std::cout << "Seconds: " << std::fixed << std::setprecision(3) << seconds.count() << std::endl;
+        }
     }
     catch (const std::exception& e)
     {
