@@ -111,11 +111,37 @@ cd "$TMP_DIR"
 
 # README.txt line 1 contains the title and version, while line 2
 # contains the release date. Preserve the existing title text.
-README_TITLE=$(sed -n '1p' README.txt)
-[[ "$README_TITLE" == *"$TEMPLATE_VERSION" ]] || handle_error "unexpected README.txt version line"
-README_TITLE="${README_TITLE%$TEMPLATE_VERSION}$VERSION"
+README_TITLE=$(sed -n '1p' README.txt | tr -d '\r')
+README_TEMPLATE_VERSION="${README_TITLE##* }"
+[ "$README_TEMPLATE_VERSION" = "$TEMPLATE_VERSION" ] || handle_error "unexpected README.txt version line"
+
+# The 1.0 release README predates the "fast" wording and --test option.
+# Patch only that template so newer release archives are left untouched.
+if [ "$README_TEMPLATE_VERSION" = "1.0" ]; then
+    grep -qF "  This is a C++ implementation of J. P. Sorenson's Pseudosquares Prime Sieve" README.txt ||
+        handle_error "unexpected README.txt 1.0 About section"
+    grep -qF "    -p, --print        Print primes to the standard output." README.txt ||
+        handle_error "unexpected README.txt 1.0 options section"
+    grep -qF "                      Default setting: use all available CPU cores." README.txt ||
+        handle_error "unexpected README.txt 1.0 threads option alignment"
+    if grep -qF "        --test         Run the unit tests." README.txt; then
+        handle_error "unexpected README.txt 1.0 options section"
+    fi
+
+    sed -i 's/  This is a C++ implementation/  This is a fast C++ implementation/' README.txt
+    sed -i '/    -p, --print        Print primes to the standard output\./a\        --test         Run the unit tests.' README.txt
+    sed -i 's/^                      Default setting:/                       Default setting:/' README.txt
+fi
+
+README_TITLE="${README_TITLE%$README_TEMPLATE_VERSION}$VERSION"
 sed -i "1 s/.*/$README_TITLE/" README.txt
 sed -i "2 s/.*/$FULL_DATE/" README.txt
+
+# README.txt is distributed for Windows and must use CRLF line endings.
+# Some sed operations above can create LF-only lines, so normalize the
+# complete file back to CRLF before it is added to the release archive.
+sed -i 's/\r$//' README.txt
+sed -i 's/$/\r/' README.txt
 
 if [ "$YEAR" = "2025" ]; then
     COPYRIGHT="Copyright (c) 2025, Kim Walisch."
@@ -125,8 +151,10 @@ fi
 sed -i "3 s/.*/$COPYRIGHT/" LICENSE
 
 # Verify sed has worked correctly
-[ "$(sed -n '1p' README.txt)" = "$README_TITLE" ] || handle_error "failed updating README.txt version"
-[ "$(sed -n '2p' README.txt)" = "$FULL_DATE" ] || handle_error "failed updating README.txt date"
+[ "$(sed -n '1p' README.txt | tr -d '\r')" = "$README_TITLE" ] || handle_error "failed updating README.txt version"
+[ "$(sed -n '2p' README.txt | tr -d '\r')" = "$FULL_DATE" ] || handle_error "failed updating README.txt date"
+awk 'substr($0, length($0), 1) != "\r" { exit 1 }' README.txt ||
+    handle_error "README.txt contains non-CRLF line endings"
 [ "$(sed -n '3p' LICENSE)" = "$COPYRIGHT" ] || handle_error "failed updating LICENSE"
 
 ./pseudosquares_prime_sieve.exe -v
