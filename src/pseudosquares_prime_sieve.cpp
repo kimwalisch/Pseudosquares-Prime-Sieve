@@ -296,9 +296,9 @@ void initialize(uint128_t stop,
 // Reuse the same Montgomery context for all modular
 // exponentiations performed for the candidate n.
 template <typename Montgomery>
-bool pseudosquares_prime_test_montgomery(uint128_t n,
-                                         int p,
-                                         const Montgomery& mf)
+bool pseudosquares_prime_test(uint128_t n,
+                             int p,
+                             const Montgomery& mf)
 {
     using T = typename Montgomery::IntegerType;
 
@@ -393,19 +393,19 @@ bool pseudosquares_prime_test(uint128_t n, int p)
     {
         uint64_t m = (uint64_t) n;
         hurchalla::MontgomeryQuarter<uint64_t> mf(m);
-        return pseudosquares_prime_test_montgomery(n, p, mf);
+        return pseudosquares_prime_test(n, p, mf);
     }
     else if (n <= std::numeric_limits<uint64_t>::max() / 2)
     {
         uint64_t m = (uint64_t) n;
         hurchalla::MontgomeryHalf<uint64_t> mf(m);
-        return pseudosquares_prime_test_montgomery(n, p, mf);
+        return pseudosquares_prime_test(n, p, mf);
     }
     else if (n <= std::numeric_limits<uint64_t>::max())
     {
         uint64_t m = (uint64_t) n;
         hurchalla::MontgomeryForm<uint64_t> mf(m);
-        return pseudosquares_prime_test_montgomery(n, p, mf);
+        return pseudosquares_prime_test(n, p, mf);
     }
     else
     {
@@ -413,7 +413,7 @@ bool pseudosquares_prime_test(uint128_t n, int p)
         // is limited by n (modulus) <= 1.73 * 10^33.
         ASSERT(n <= std::numeric_limits<uint128_t>::max() / 4);
         hurchalla::MontgomeryQuarter<uint128_t> mf(n);
-        return pseudosquares_prime_test_montgomery(n, p, mf);
+        return pseudosquares_prime_test(n, p, mf);
     }
 }
 
