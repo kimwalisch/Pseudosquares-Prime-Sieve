@@ -72,6 +72,7 @@ Options:
   -d, --dist=DIST    Sieve the interval [START, START + DIST].
   -h, --help         Print this help menu.
   -p, --print        Print primes to the standard output.
+      --test         Run the unit tests.
   -t, --threads=NUM  Set the number of threads, NUM <= CPU cores.
                      Default setting: use all available CPU cores.
   -v, --version      Print version and license information.
