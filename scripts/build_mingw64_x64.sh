@@ -65,10 +65,12 @@ g++ -std=gnu++17 -static -O3 -mpopcnt -flto -DNDEBUG -D_WIN32_WINNT=0x0A00 -Wall
     -o pseudosquares_prime_sieve.exe
 
 strip pseudosquares_prime_sieve.exe
+echo ""
 
 # Run release tests #################################################
 
 ./pseudosquares_prime_sieve --test
+echo ""
 
 # Test printing primes. Native Windows stdout uses CRLF,
 # so strip CR before calculating the MD5 hash.
@@ -88,7 +90,6 @@ then
 fi
 
 echo ""
-echo ""
 
 # Create a release zip archive ######################################
 
@@ -101,10 +102,8 @@ rm "$TEMPLATE_ZIP"
 [ -f "$TMP_DIR/LICENSE" ] || handle_error "release template is missing LICENSE"
 
 echo ""
-echo ""
 echo "Old file size: $(ls -l --block-size=K "$TMP_DIR/pseudosquares_prime_sieve.exe")"
 echo "New file size: $(ls -l --block-size=K pseudosquares_prime_sieve.exe)"
-echo ""
 echo ""
 
 mv -f pseudosquares_prime_sieve.exe "$TMP_DIR"
@@ -132,7 +131,6 @@ sed -i "3 s/.*/$COPYRIGHT/" LICENSE
 
 ./pseudosquares_prime_sieve.exe -v
 
-echo ""
 echo ""
 
 # Build release zip archive #########################################
