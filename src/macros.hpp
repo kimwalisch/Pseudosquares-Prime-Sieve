@@ -72,14 +72,23 @@
 ///
 #if defined(ENABLE_ASSERT)
   [[noreturn]]
-  void assert_failed(const char* expression,
+  void assert_failed(const char* assertion,
                      const char* file,
-                     const char* function,
-                     int line);
+                     unsigned int line,
+                     const char* function);
+
+  #if defined(_MSC_VER)
+    #define ASSERT_FUNCTION __FUNCSIG__
+  #elif defined(__GNUC__) || defined(__clang__)
+    #define ASSERT_FUNCTION __PRETTY_FUNCTION__
+  #else
+    #define ASSERT_FUNCTION __func__
+  #endif
+
   #define ASSERT(x) \
     do { \
-      if_unlikely(!(x)) \
-        assert_failed(#x, __FILE__, __func__, __LINE__); \
+      if(!(x)) \
+        assert_failed(#x, __FILE__, __LINE__, ASSERT_FUNCTION); \
     } while (0)
 #else
   #define ASSERT(x) ((void) 0)

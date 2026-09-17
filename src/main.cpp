@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <iostream>
 #include <stdint.h>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -52,6 +53,32 @@ void version()
   std::cout << "BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>" << std::endl;
 
   std::exit(0);
+}
+
+/// Custom assertion failure handler.
+/// On MinGW GCC 16, the standard assert() implementation no longer
+/// guarantees a non-returning failure path, which can cause false
+/// positive compiler warnings such as -Warray-bounds in debug builds.
+/// https://github.com/mingw-w64/mingw-w64/commit/ecf2328a328d11dec7044b40b2b5e93b5b2b9d9e
+///
+/// Using our own [[noreturn]] handler lets the compiler correctly
+/// infer that execution cannot continue after a failed assertion.
+///
+[[noreturn]]
+void assert_failed(const char* assertion,
+                   const char* file,
+                   unsigned int line,
+                   const char* function)
+{
+    std::string msg("\n");
+    msg += std::string(file) + ":" + std::to_string(line);
+    msg += ": " + std::string(function);
+    msg += ": Assertion `";
+    msg += assertion + std::string("' failed.\n\n");
+
+    std::cerr << msg;
+
+    std::abort();
 }
 
 namespace {
