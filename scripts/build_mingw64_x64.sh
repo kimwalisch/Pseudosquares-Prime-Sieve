@@ -27,9 +27,9 @@ rm -rf build build-release
 FULL_DATE=$(date +'%B %d, %Y')
 YEAR=$(date +'%Y')
 
-# The program version is printed by version() in src/main.cpp.
-VERSION=$(sed -n 's/.*pseudosquares_prime_sieve \([0-9][0-9.]*\)".*/\1/p' src/main.cpp | head -n 1)
-[ -n "$VERSION" ] || handle_error "failed detecting version in src/main.cpp"
+# The program version is defined by project(... VERSION ...) in CMakeLists.txt.
+VERSION=$(grep '^[[:space:]]*VERSION ' CMakeLists.txt | head -n 1 | awk '{print $2}')
+[ -n "$VERSION" ] || handle_error "failed detecting version in CMakeLists.txt"
 
 TEMPLATE_VERSION=1.0
 TEMPLATE_ZIP=Pseudosquares-Prime-Sieve-$TEMPLATE_VERSION-win-x64.zip
