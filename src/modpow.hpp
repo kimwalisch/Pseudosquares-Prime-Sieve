@@ -26,8 +26,9 @@ namespace {
 
 /// Return the canonical Montgomery value of 2^e mod mf.getModulus().
 template <int two, typename Montgomery>
-typename Montgomery::CanonicalValue modpow(const Montgomery& mf,
-                                            typename Montgomery::IntegerType exponent)
+NOINLINE typename Montgomery::CanonicalValue
+modpow(const Montgomery& mf,
+       typename Montgomery::IntegerType exponent)
 {
     static_assert(two == 2, "modpow: two != 2");
 
@@ -42,9 +43,10 @@ typename Montgomery::CanonicalValue modpow(const Montgomery& mf,
 
 /// Return the canonical Montgomery value of base^e mod mf.getModulus().
 template <typename Montgomery>
-typename Montgomery::CanonicalValue modpow(const Montgomery& mf,
-                                            uint64_t base,
-                                            typename Montgomery::IntegerType exponent)
+NOINLINE typename Montgomery::CanonicalValue
+modpow(const Montgomery& mf,
+       uint64_t base,
+       typename Montgomery::IntegerType exponent)
 {
     using T = typename Montgomery::IntegerType;
 
