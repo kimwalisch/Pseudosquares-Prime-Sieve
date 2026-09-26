@@ -74,6 +74,10 @@ target_link_libraries(pseudosquares_prime_sieve Threads::Threads primesieve::pri
 target_compile_definitions(pseudosquares_prime_sieve PRIVATE $<$<CONFIG:Debug>:ENABLE_ASSERT>)
 set_target_properties(pseudosquares_prime_sieve PROPERTIES CXX_STANDARD 17)
 
-# Register test with CTest
+# Unit tests #########################################################
+
 enable_testing()
+add_subdirectory(test)
+
+# Register test with CTest
 add_test(NAME tests COMMAND pseudosquares_prime_sieve --test)

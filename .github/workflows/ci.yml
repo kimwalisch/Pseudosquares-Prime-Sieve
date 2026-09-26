@@ -25,7 +25,7 @@ jobs:
             cmake . -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./pseudosquares_prime_sieve --test
+        run: ctest --output-on-failure
       # Test printing primes
       - name: pseudosquares_prime_sieve 1e7 -p | md5sum
         run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
@@ -48,7 +48,7 @@ jobs:
             cmake . -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./pseudosquares_prime_sieve --test
+        run: ctest --output-on-failure
       # Test printing primes
       - name: pseudosquares_prime_sieve 1e7 -p | md5sum
         run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
@@ -76,7 +76,7 @@ jobs:
             cmake . -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./pseudosquares_prime_sieve --test
+        run: ctest --output-on-failure
       # Test printing primes. Native Windows stdout uses CRLF, so strip CR
       # before calculating the MD5 hash used by the Unix CI jobs.
       - name: pseudosquares_prime_sieve 1e7 -p | md5sum
@@ -100,7 +100,7 @@ jobs:
             cmake . -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=${{matrix.config}} -DCMAKE_C_FLAGS="-O3 -Wall -Wextra -pedantic -Werror" -DCMAKE_CXX_FLAGS="-O3 -Wall -Wextra -pedantic -Werror"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./pseudosquares_prime_sieve --test
+        run: ctest --output-on-failure
       # Test printing primes
       - name: pseudosquares_prime_sieve 1e7 -p | md5
         run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5 | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi
@@ -119,7 +119,7 @@ jobs:
             cmake . -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wall -Wextra -pedantic -Werror -O2 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer" -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -Werror -O2 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
             cmake --build . --parallel --verbose
       - name: Unit tests
-        run: ./pseudosquares_prime_sieve --test
+        run: ctest --output-on-failure
       # Test printing primes
       - name: pseudosquares_prime_sieve 1e7 -p | md5sum
         run: if [ "$(./pseudosquares_prime_sieve 1e7 -p | md5sum | cut -f1 -d' ')" != "60e34d268bad671a5f299e1ecc988ff6" ]; then exit 1; fi

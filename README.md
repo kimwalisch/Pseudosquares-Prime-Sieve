@@ -200,15 +200,14 @@ for(d=W[p%m].next; d<=min(s,sqrt(r)); d=d+W[d%m].next)
             B.clear(x);
 ```
 
-## Error in Condition 4 of Lemma 3.1
+## Error: Missing fallback when condition 4 is not satisfied
 
 $p_i^{(n-1)/2} \equiv -1 \pmod{n}$ for some $p_i \leq p$ when $n \equiv 1 \pmod{8}$
 
-Some numbers $n \equiv 1 \pmod{8}$ can be primes but without any -1 result in the formula above. For example 10001584849 is such a prime. The formula above from Sorenson's paper fails to detect such primes. In order to fix this issue, we add the following checks for numbers $n \equiv 1 \pmod{8}$ without any -1 result:
+Some primes $n \equiv 1 \pmod{8}$ have no -1 result in the formula above, e.g. 10001584849 (all $p_i \leq 43$ give +1), hence Sorenson's algorithm misses such primes.
 
-Start testing $q^{(n-1)/2} \pmod{n}$ for primes $q$ above $p$, one at a time, until either:
+For sieve survivors satisfying conditions (1) and (2) of Lemma 3.1, we add a fallback when $n \equiv 1 \pmod{8}$ and every base $p_i \leq p$ returned +1. We test $q^{(n-1)/2} \pmod{n}$ for successive primes $q > p$, one at a time, until either:
 
-* You get a -1 result, in which case $n$ is prime or a prime power.
-* You get something other than a ±1 result, in which case $n$ is not prime.
-* You can't keep getting +1 results forever, unless $n$ is a perfect power. According to Sorenson's paper this case can only occur if $n > 6.4 \cdot 10^{37}$.
-* You stop once $n > L_p$, in which case $n$ is a prime or a prime power.
+* We get a -1 result: $n$ is a prime or a prime power. According to Sorenson's paper, prime powers passing these tests can only occur if $n > 6.4 \cdot 10^{37}$.
+* We get a result other than ±1: $n$ is not prime.
+* All primes ≤ $q$ gave +1 and $L_q > n$: $n$ is not prime. A prime $n \equiv 1 \pmod{8}$ would be a quadratic residue modulo all odd primes ≤ $q$ (quadratic reciprocity), hence $n \geq L_q$.
