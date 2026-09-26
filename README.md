@@ -82,24 +82,93 @@ Options:
 
 Each run counts the primes in the interval [x, x + 10<sup>9</sup>], where x is the interval start.
 
-| Interval                                          | Prime count | Time elapsed |
-| ------------------------------------------------: | ----------: | -----------: |
-| [10<sup>18</sup>, 10<sup>18</sup>+10<sup>9</sup>] |  24,127,085 |       3.962s |
-| [10<sup>19</sup>, 10<sup>19</sup>+10<sup>9</sup>] |  22,854,258 |       4.769s |
-| [10<sup>20</sup>, 10<sup>20</sup>+10<sup>9</sup>] |  21,710,426 |      15.973s |
-| [10<sup>21</sup>, 10<sup>21</sup>+10<sup>9</sup>] |  20,684,249 |      17.089s |
-| [10<sup>22</sup>, 10<sup>22</sup>+10<sup>9</sup>] |  19,737,627 |      19.231s |
-| [10<sup>23</sup>, 10<sup>23</sup>+10<sup>9</sup>] |  18,879,205 |      20.599s |
-| [10<sup>24</sup>, 10<sup>24</sup>+10<sup>9</sup>] |  18,099,721 |      22.671s |
-| [10<sup>25</sup>, 10<sup>25</sup>+10<sup>9</sup>] |  17,376,254 |      20.599s |
-| [10<sup>26</sup>, 10<sup>26</sup>+10<sup>9</sup>] |  16,705,096 |      24.358s |
-| [10<sup>27</sup>, 10<sup>27</sup>+10<sup>9</sup>] |  16,081,189 |      26.722s |
-| [10<sup>28</sup>, 10<sup>28</sup>+10<sup>9</sup>] |  15,514,691 |      26.968s |
-| [10<sup>29</sup>, 10<sup>29</sup>+10<sup>9</sup>] |  14,974,110 |      29.775s |
-| [10<sup>30</sup>, 10<sup>30</sup>+10<sup>9</sup>] |  14,473,890 |      31.075s |
-| [10<sup>31</sup>, 10<sup>31</sup>+10<sup>9</sup>] |  14,006,222 |      29.830s |
-| [10<sup>32</sup>, 10<sup>32</sup>+10<sup>9</sup>] |  13,573,489 |      32.867s |
-| [10<sup>33</sup>, 10<sup>33</sup>+10<sup>9</sup>] |  13,155,690 |      31.554s |
+<table>
+  <tr align="center">
+    <td><b>Interval</b></td>
+    <td><b>Prime count</b></td>
+    <td><b>Time elapsed</b></td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>18</sup>, 10<sup>18</sup> + 10<sup>9</sup>]</td>
+    <td>24,127,085</td>
+    <td>3.962s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>19</sup>, 10<sup>19</sup> + 10<sup>9</sup>]</td>
+    <td>22,854,258</td>
+    <td>4.769s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>20</sup>, 10<sup>20</sup> + 10<sup>9</sup>]</td>
+    <td>21,710,426</td>
+    <td>15.973s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>21</sup>, 10<sup>21</sup> + 10<sup>9</sup>]</td>
+    <td>20,684,249</td>
+    <td>17.089s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>22</sup>, 10<sup>22</sup> + 10<sup>9</sup>]</td>
+    <td>19,737,627</td>
+    <td>19.231s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>23</sup>, 10<sup>23</sup> + 10<sup>9</sup>]</td>
+    <td>18,879,205</td>
+    <td>20.599s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>24</sup>, 10<sup>24</sup> + 10<sup>9</sup>]</td>
+    <td>18,099,721</td>
+    <td>22.671s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>25</sup>, 10<sup>25</sup> + 10<sup>9</sup>]</td>
+    <td>17,376,254</td>
+    <td>20.599s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>26</sup>, 10<sup>26</sup> + 10<sup>9</sup>]</td>
+    <td>16,705,096</td>
+    <td>24.358s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>27</sup>, 10<sup>27</sup> + 10<sup>9</sup>]</td>
+    <td>16,081,189</td>
+    <td>26.722s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>28</sup>, 10<sup>28</sup> + 10<sup>9</sup>]</td>
+    <td>15,514,691</td>
+    <td>26.968s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>29</sup>, 10<sup>29</sup> + 10<sup>9</sup>]</td>
+    <td>14,974,110</td>
+    <td>29.775s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>30</sup>, 10<sup>30</sup> + 10<sup>9</sup>]</td>
+    <td>14,473,890</td>
+    <td>31.075s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>31</sup>, 10<sup>31</sup> + 10<sup>9</sup>]</td>
+    <td>14,006,222</td>
+    <td>29.830s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>32</sup>, 10<sup>32</sup> + 10<sup>9</sup>]</td>
+    <td>13,573,489</td>
+    <td>32.867s</td>
+  </tr>
+  <tr align="right">
+    <td>[10<sup>33</sup>, 10<sup>33</sup> + 10<sup>9</sup>]</td>
+    <td>13,155,690</td>
+    <td>31.554s</td>
+  </tr>
+</table>
 
 Benchmarks were run on an Intel Core Ultra 5 245K with 14 CPU cores (from 2024) and the `pseudosquares_prime_sieve` program was compiled using GCC 16.
 
