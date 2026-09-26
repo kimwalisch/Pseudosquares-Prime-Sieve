@@ -91,82 +91,82 @@ Each run counts the primes in the interval [x, x + 10<sup>9</sup>], where x is t
   <tr align="right">
     <td>[10<sup>18</sup>, 10<sup>18</sup> + 10<sup>9</sup>]</td>
     <td>24,127,085</td>
-    <td>3.96s</td>
+    <td>4.81s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>19</sup>, 10<sup>19</sup> + 10<sup>9</sup>]</td>
     <td>22,854,258</td>
-    <td>4.76s</td>
+    <td>5.88s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>20</sup>, 10<sup>20</sup> + 10<sup>9</sup>]</td>
     <td>21,710,426</td>
-    <td>15.97s</td>
+    <td>20.14s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>21</sup>, 10<sup>21</sup> + 10<sup>9</sup>]</td>
     <td>20,684,249</td>
-    <td>17.08s</td>
+    <td>21.14s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>22</sup>, 10<sup>22</sup> + 10<sup>9</sup>]</td>
     <td>19,737,627</td>
-    <td>19.23s</td>
+    <td>24.42s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>23</sup>, 10<sup>23</sup> + 10<sup>9</sup>]</td>
     <td>18,879,205</td>
-    <td>20.59s</td>
+    <td>26.09s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>24</sup>, 10<sup>24</sup> + 10<sup>9</sup>]</td>
     <td>18,099,721</td>
-    <td>22.67s</td>
+    <td>28.65s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>25</sup>, 10<sup>25</sup> + 10<sup>9</sup>]</td>
     <td>17,376,254</td>
-    <td>20.59s</td>
+    <td>26.75s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>26</sup>, 10<sup>26</sup> + 10<sup>9</sup>]</td>
     <td>16,705,096</td>
-    <td>24.35s</td>
+    <td>31.18s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>27</sup>, 10<sup>27</sup> + 10<sup>9</sup>]</td>
     <td>16,081,189</td>
-    <td>26.72s</td>
+    <td>34.44s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>28</sup>, 10<sup>28</sup> + 10<sup>9</sup>]</td>
     <td>15,514,691</td>
-    <td>26.96s</td>
+    <td>35.02s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>29</sup>, 10<sup>29</sup> + 10<sup>9</sup>]</td>
     <td>14,974,110</td>
-    <td>29.77s</td>
+    <td>37.82s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>30</sup>, 10<sup>30</sup> + 10<sup>9</sup>]</td>
     <td>14,473,890</td>
-    <td>31.07s</td>
+    <td>40.47s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>31</sup>, 10<sup>31</sup> + 10<sup>9</sup>]</td>
     <td>14,006,222</td>
-    <td>29.83s</td>
+    <td>38.49s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>32</sup>, 10<sup>32</sup> + 10<sup>9</sup>]</td>
     <td>13,573,489</td>
-    <td>32.86s</td>
+    <td>41.88s</td>
   </tr>
   <tr align="right">
     <td>[10<sup>33</sup>, 10<sup>33</sup> + 10<sup>9</sup>]</td>
     <td>13,155,690</td>
-    <td>31.55s</td>
+    <td>41.67s</td>
   </tr>
 </table>
 
