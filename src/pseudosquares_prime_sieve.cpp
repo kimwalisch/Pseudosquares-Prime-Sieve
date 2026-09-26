@@ -361,9 +361,10 @@ bool pseudosquares_prime_test(uint128_t n,
             return false;
     }
 
-    // Condition (4) for n ≡ 1 mod 8 without any -1 result:
-    // test the primes q > p until we find a -1 result (prime),
-    // a result ≠ ±1 (composite) or until Lq > n (composite).
+    // Condition (4) for n ≡ 1 mod 8 with all bases ≤ p giving +1:
+    // test successive primes q > p until we find -1 (prime),
+    // a result ≠ ±1 (composite), or all bases through q give +1
+    // with Lq > n (composite).
     // See "Errors in Sorenson's paper" in README.md.
     if ((n & 7) == 1 && !found_minus1)
     {
