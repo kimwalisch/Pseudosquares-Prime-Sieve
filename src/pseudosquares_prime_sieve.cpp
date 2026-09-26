@@ -310,8 +310,8 @@ bool pseudosquares_prime_test(uint128_t n,
     auto res = modpow<2>(mf, e);
 
     // Condition (4) for n ≡ 1 mod 8: found -1 result
-    if ((n & 7) == 1 && res == minus1)
-        return true;
+    bool found_minus1 = (res == minus1);
+
     // Condition (4) for n ≡ 5 mod 8: 2^((n−1)/2) ≡ −1 mod n
     if ((n & 7) == 5 && res != minus1)
         return false;
@@ -319,7 +319,7 @@ bool pseudosquares_prime_test(uint128_t n,
     if (res != one && res != minus1)
         return false;
 
-    // For 3 <= pi ≤ p: pi^((n−1)/2) mod n
+    // For 3 ≤ pi ≤ p: pi^((n−1)/2) mod n
     // Process 4 bases at a time to expose instruction-level
     // parallelism in Montgomery modular exponentiation.
     std::size_t i = 1;
@@ -335,47 +335,47 @@ bool pseudosquares_prime_test(uint128_t n,
         }};
         auto results = mf.pow(bases, e);
 
-        // Preserve the original test order and early-exit semantics.
         for (std::size_t j = 0; j < results.size(); j++)
         {
             res = mf.getCanonicalValue(results[j]);
 
             // Condition (4) for n ≡ 1 mod 8: found -1 result
-            if ((n & 7) == 1 && res == minus1)
-                return true;
+            if (res == minus1)
+                found_minus1 = true;
             // Condition (3): pi^((n−1)/2) ≡ ±1 mod n
             if (res != one && res != minus1)
                 return false;
         }
     }
 
-    // Scalar tail for any remaining prime bases.
+    // Scalar tail for any remaining prime bases
     for (; primes[i] <= p; i++)
     {
         res = modpow(mf, primes[i], e);
 
         // Condition (4) for n ≡ 1 mod 8: found -1 result
-        if ((n & 7) == 1 && res == minus1)
-            return true;
+        if (res == minus1)
+            found_minus1 = true;
         // Condition (3): pi^((n−1)/2) ≡ ±1 mod n
         if (res != one && res != minus1)
             return false;
     }
 
-    // Condition (4): for n ≡ 1 mod 8:
-    if ((n & 7) == 1)
+    // Condition (4) for n ≡ 1 mod 8 without any -1 result:
+    // test the primes q > p until we find a -1 result (prime),
+    // a result ≠ ±1 (composite) or until Lq > n (composite).
+    // See "Errors in Sorenson's paper" in README.md.
+    if ((n & 7) == 1 && !found_minus1)
     {
-        // In case we have not found any -1 result so far,
-        // check all pi > p while Lpi <= n: pi^((n−1)/2) ≡ ±1 mod n
-        // This step is missing in Sorenson's paper. Sorenson
-        // confirmed it was a bug and suggested this fix.
-        for (std::size_t i = prime_pi[p]; pseudosquares.at(i).Lp <= n; i++)
+        for (std::size_t i = prime_pi[p]; true; i++)
         {
             res = modpow(mf, primes[i], e);
 
             if (res == minus1)
                 return true;
             if (res != one)
+                return false;
+            if (pseudosquares.at(i).Lp > n)
                 return false;
         }
     }

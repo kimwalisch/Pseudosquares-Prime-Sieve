@@ -1,0 +1,10 @@
+file(GLOB files "*.cpp")
+
+foreach(file ${files})
+    get_filename_component(binary_name ${file} NAME_WE)
+    add_executable(${binary_name} ${file} ${CMAKE_SOURCE_DIR}/src/pseudosquares_prime_sieve.cpp)
+    target_link_libraries(${binary_name} primesieve::primesieve hurchalla_modular_arithmetic)
+    target_include_directories(${binary_name} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    set_target_properties(${binary_name} PROPERTIES CXX_STANDARD 17)
+    add_test(NAME ${binary_name} COMMAND ${binary_name})
+endforeach()
