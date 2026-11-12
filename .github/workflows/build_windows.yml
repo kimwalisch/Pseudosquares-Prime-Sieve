@@ -21,10 +21,10 @@ jobs:
           git config --global core.autocrlf input
 
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup MSYS2 / MinGW-w64
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@v2.33.0
         with:
           msystem: MINGW64
           update: true
@@ -52,7 +52,7 @@ jobs:
           echo "PROJECT_VERSION=$($VersionString.Matches[0].Groups[1].Value)" >> $env:GITHUB_ENV
 
       - name: Upload Windows x64 CI artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Pseudosquares-Prime-Sieve-${{ env.PROJECT_VERSION }}-win-x64
           path: build-release/Pseudosquares-Prime-Sieve-${{ env.PROJECT_VERSION }}-win-x64/*
@@ -72,10 +72,10 @@ jobs:
           git config --global core.autocrlf input
 
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup MSYS2 / MinGW-w64
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@v2.33.0
         with:
           msystem: CLANGARM64
           update: true
@@ -103,7 +103,7 @@ jobs:
           echo "PROJECT_VERSION=$($VersionString.Matches[0].Groups[1].Value)" >> $env:GITHUB_ENV
 
       - name: Upload Windows arm64 CI artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: Pseudosquares-Prime-Sieve-${{ env.PROJECT_VERSION }}-win-arm64
           path: build-release/Pseudosquares-Prime-Sieve-${{ env.PROJECT_VERSION }}-win-arm64/*
